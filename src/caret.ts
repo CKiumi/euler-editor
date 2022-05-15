@@ -87,6 +87,24 @@ export class Caret {
     this.set(this.target, this.pos + atoms.length);
   }
 
+  copy(ev: ClipboardEvent) {
+    const latex = this.getValue();
+    if (latex) ev.clipboardData?.setData("text/plain", latex);
+    console.log("first");
+    ev.preventDefault();
+  }
+
+  cut(ev: ClipboardEvent) {
+    this.copy(ev);
+    this.replaceRange();
+  }
+
+  getValue() {
+    if (this.sel === null) return "";
+    const [start, end] = this.range();
+    return Util.serializeGroupAtom(this.target.body.slice(start + 1, end + 1));
+  }
+
   moveRight() {
     if (this.sel !== null) {
       this.set(this.target, this.range()[1]);

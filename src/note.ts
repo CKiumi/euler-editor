@@ -37,6 +37,12 @@ export class EulerNote extends HTMLElement {
     );
     this.field.addEventListener("pointerdown", (ev) => this.onPointerDown(ev));
     this.textarea.addEventListener("keydown", (ev) => this.onKeyDown(ev));
+    this.textarea.addEventListener("cut", (ev) => this.caret.cut(ev));
+    this.textarea.addEventListener("copy", (ev) => this.caret.copy(ev));
+    this.textarea.addEventListener("paste", (ev) => {
+      ev.clipboardData &&
+        this.caret.insert(parse(ev.clipboardData.getData("text/plain")));
+    });
     this.lines = [new GroupAtom([])];
   }
   connectedCallback(): void {

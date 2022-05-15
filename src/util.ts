@@ -7,6 +7,7 @@ import {
   OverlineAtom,
   SqrtAtom,
   SupSubAtom,
+  SymAtom,
 } from "eulertex/src/lib";
 
 export module Util {
@@ -75,5 +76,55 @@ export module Util {
     }
     const { top, bottom } = atom.elem.getBoundingClientRect();
     return top + (bottom - top) / 2;
+  };
+
+  export const serializeGroupAtom = (atoms: Atom[]): string => {
+    return atoms
+      .map((atom) => serialize(atom))
+      .filter(Boolean)
+      .join(" ");
+  };
+
+  export const serialize = (atom: Atom): string => {
+    if (atom instanceof SymAtom) {
+      return atom.char;
+    }
+    if (atom instanceof SqrtAtom) {
+      return `\\sqrt{${serializeGroupAtom(atom.body.body)}}`;
+    }
+    if (atom instanceof OverlineAtom) {
+      return `\\overline{${serializeGroupAtom(atom.body.body)}}`;
+    }
+    if (atom instanceof AccentAtom) {
+      if (atom.accent.char === "^") {
+        return `\\hat{${serializeGroupAtom(atom.body.body)}}`;
+      }
+      if (atom.accent.char === "~") {
+        return `\\tilde{${serializeGroupAtom(atom.body.body)}}`;
+      }
+    }
+    if (atom instanceof LRAtom) {
+      return `\\left(${serializeGroupAtom(atom.body.body)} \\right)`;
+    }
+    if (atom instanceof SupSubAtom) {
+      let [sup, sub] = ["", ""];
+      if (atom.sup) sup = `^{${serializeGroupAtom(atom.sup.body)}}`;
+      if (atom.sub) sub = `_{${serializeGroupAtom(atom.sub.body)}}`;
+      return `${serialize(atom)}${sub}${sup}`;
+    }
+    if (atom instanceof MatrixAtom) {
+      let result = "";
+      for (let row = 0; row < atom.children.length; row++) {
+        for (let col = 0; col < atom.children[row].length; col++) {
+          if (col > 0) result += " & ";
+          result = serializeGroupAtom(atom.children[row][col].body);
+          if (row < atom.children.length - 1) {
+            result += " \\\\ ";
+          }
+        }
+        return `\\begin{pmatrix}${result}\\end{pmatrix}`;
+      }
+    }
+    return "";
   };
 }
