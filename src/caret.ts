@@ -18,7 +18,9 @@ export class Caret {
     public selElem: HTMLElement,
     public target: GroupAtom = new GroupAtom([]),
     public pos: number = 0
-  ) {}
+  ) {
+    this.elem.style.height = "0";
+  }
 
   cur() {
     return this.target.body[this.pos];
@@ -32,8 +34,8 @@ export class Caret {
     const parentRect = elem.parentElement.getBoundingClientRect();
     const [x, y] = this.toReltiveCoord([rect.x + rect.width, parentRect.y]);
     if (parentRect.height) {
-      this.elem.style.cssText = `height:${parentRect.height * 1.2}px; 
-        transform:translate(${x - 1}px,${y - parentRect.height * 0.1}px)`;
+      this.elem.style.cssText = `height:${parentRect.height}px; 
+        transform:translate(${x - 1}px,${y}px)`;
     } else {
       this.elem.style.cssText = `height:${10}px; 
         transform:translate(${x}px,${y - 10}px)`;
@@ -60,10 +62,8 @@ export class Caret {
       Util.right(start),
       Util.top(this.target),
     ]);
-    this.selElem.style.height = `${Util.height(this.target) * 1.2}px`;
-    this.selElem.style.transform = `translate(${relX}px,${
-      relY - Util.height(this.target) * 0.1
-    }px)`;
+    this.selElem.style.height = `${Util.height(this.target)}px`;
+    this.selElem.style.transform = `translate(${relX}px,${relY}px)`;
     this.selElem.style.width = `${Util.right(last) - Util.right(start)}px`;
   };
 
@@ -73,9 +73,6 @@ export class Caret {
 
   insert(atoms: Atom[]) {
     if (this.sel !== null) return this.replaceRange(atoms);
-    atoms.forEach((atom) => {
-      atom.parent = this.target;
-    });
     this.target.body.splice(this.pos + 1, 0, ...atoms);
     this.action.render();
     this.set(this.target, this.pos + atoms.length);
@@ -238,7 +235,12 @@ export class Caret {
     this.renderCaret();
   };
 
-  pointAtom = (x: number, y: number, atoms: Atom[]) => {
+  pointAtom = (x: number, y: number, group: GroupAtom) => {
+    const { body: atoms } = group;
+    if (atoms.length === 1) {
+      this.set(group, 0);
+      return;
+    }
     this.setSel(null);
     let i = 1;
     while (atoms[i + 1] && Util.right(atoms[i]) < x) {

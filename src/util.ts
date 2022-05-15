@@ -3,7 +3,7 @@ import { Atom, GroupAtom, LRAtom, SupSubAtom } from "eulertex/src/lib";
 export module Util {
   export const children = (atom: Atom): Atom[] => {
     if (atom instanceof SupSubAtom) {
-      return [atom, atom.nuc, ...recursive(atom.sup), ...recursive(atom.sub)];
+      return [atom, ...recursive(atom.sup), ...recursive(atom.sub)];
     } else if (atom instanceof LRAtom) {
       return [atom, ...recursive(atom.body)];
     } else return [atom];
@@ -27,6 +27,13 @@ export module Util {
       throw new Error("Try to get rect of atom with no element linked");
     }
     return atom.elem.getBoundingClientRect().top;
+  };
+
+  export const bottom = (atom: Atom): number => {
+    if (!atom.elem) {
+      throw new Error("Try to get rect of atom with no element linked");
+    }
+    return atom.elem.getBoundingClientRect().bottom;
   };
 
   export const height = (atom: Atom): number => {
