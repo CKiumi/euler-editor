@@ -92,6 +92,8 @@ export class Caret {
     if (this.isLast()) {
       if (this.isSup() || this.isSub()) {
         this.exitSupSub();
+      } else if (this.isNumer() || this.isDenom()) {
+        this.exitFrac();
       } else if (this.isBody()) {
         this.exitBody();
       }
@@ -108,6 +110,8 @@ export class Caret {
         }
       } else if (cur instanceof LRAtom) {
         this.set(cur.body, 0);
+      } else if (cur instanceof FracAtom) {
+        this.set(cur.numer, 0);
       }
     }
     this.renderCaret();
@@ -124,6 +128,9 @@ export class Caret {
       if (this.isSup() || this.isSub()) {
         this.exitSupSub();
         this.set(this.target, this.pos - 1);
+      } else if (this.isNumer() || this.isDenom()) {
+        this.exitFrac();
+        this.set(this.target, this.pos - 1);
       } else if (this.isBody()) {
         this.exitBody();
         this.set(this.target, this.pos - 1);
@@ -137,12 +144,46 @@ export class Caret {
         } else {
           throw new Error("SupSubAtom must have sup or sub");
         }
+      } else if (cur instanceof FracAtom) {
+        this.set(cur.numer, cur.numer.body.length - 1);
       } else if (cur instanceof LRAtom) {
         this.set(cur.body, cur.body.body.length - 1);
       } else {
         this.set(this.target, this.pos - 1);
       }
     }
+  }
+
+  moveUp() {
+    const target = this.target;
+    if (this.isSub()) {
+      if (!(target.parent instanceof SupSubAtom)) throw new Error("");
+      if (target.parent.sup) {
+        this.pointAtomHol(this.x(), target.parent.sup);
+      }
+    } else if (this.isDenom()) {
+      if (!(target.parent instanceof FracAtom)) throw new Error("");
+      this.pointAtomHol(this.x(), target.parent.numer);
+    } else {
+      return false;
+    }
+    return true;
+  }
+
+  moveDown() {
+    const target = this.target;
+    if (this.isSup()) {
+      if (!(target.parent instanceof SupSubAtom)) throw new Error("");
+      if (target.parent.sub) {
+        this.pointAtomHol(this.x(), target.parent.sub);
+      }
+    } else if (this.isNumer()) {
+      if (!(target.parent instanceof FracAtom)) throw new Error("");
+      this.pointAtomHol(this.x(), target.parent.denom);
+    } else {
+      return false;
+    }
+    return true;
   }
 
   shiftRight() {
@@ -320,6 +361,16 @@ export class Caret {
     return this.target === this.target.parent.sub;
   }
 
+  isNumer() {
+    if (!(this.target.parent instanceof FracAtom)) return false;
+    return this.target === this.target.parent.numer;
+  }
+
+  isDenom() {
+    if (!(this.target.parent instanceof FracAtom)) return false;
+    return this.target === this.target.parent.denom;
+  }
+
   isBody() {
     if (!(this.target.parent instanceof LRAtom)) return false;
     return this.target === this.target.parent.body;
@@ -351,6 +402,22 @@ export class Caret {
     }
     const newAtom = supsub.parent;
     this.set(newAtom, newAtom.body.indexOf(supsub));
+  }
+
+  exitFrac() {
+    const frac = this.target.parent;
+    if (!(frac instanceof FracAtom)) {
+      throw new Error(
+        "Try exit from numer, however counld not find FracAtom as parent"
+      );
+    }
+    if (!(frac.parent instanceof GroupAtom)) {
+      throw new Error(
+        "Try exit from denom, however counld not find parent of FracAtom"
+      );
+    }
+    const newAtom = frac.parent;
+    this.set(newAtom, newAtom.body.indexOf(frac));
   }
 
   exitBody() {

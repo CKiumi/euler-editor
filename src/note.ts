@@ -120,13 +120,13 @@ export class EulerNote extends HTMLElement {
     }
     if (ev.code == "ArrowDown") {
       this.caret.setSel(null);
-      if (this.lineIndex !== this.lines.length - 1) {
+      if (!this.caret.moveDown() && this.lineIndex !== this.lines.length - 1) {
         this.setLine(this.lineIndex + 1, this.caret.x(), null);
       }
     }
     if (ev.code == "ArrowUp") {
       this.caret.setSel(null);
-      if (this.lineIndex !== 0) {
+      if (!this.caret.moveUp() && this.lineIndex !== 0) {
         this.setLine(this.lineIndex - 1, this.caret.x(), null);
       }
     }
