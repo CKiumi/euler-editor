@@ -1,0 +1,111 @@
+@keyframes ML__caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+h2 {
+  font-size: 25px;
+}
+.box {
+  background: none !important;
+}
+euler-note {
+  padding: 5px;
+}
+euler-note,
+math-field {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #fff;
+  display: block;
+  font-style: normal;
+  overflow-x: scroll;
+}
+.EN_caret {
+  border-radius: 2px;
+  border-right: 2px rgb(87, 156, 235) solid;
+  position: absolute;
+  height: 30px;
+  z-index: 1;
+  content: "";
+  animation: ML__caret-blink 1.05s step-end forwards infinite;
+}
+
+.EN_selection {
+  background: rgb(87, 156, 235, 0.5);
+  box-sizing: border-box;
+  position: absolute;
+}
+
+.EN_container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  cursor: text;
+}
+
+.EN_textarea {
+  position: absolute;
+  clip: rect(0 0 0 0);
+}
+
+button {
+  color: #ddd;
+  background-color: #1976d2;
+  padding: 6px 10px;
+  line-height: 1.75;
+  border-radius: 4px;
+  text-transform: uppercase;
+  border: 0;
+  cursor: pointer;
+  transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+}
+button:hover {
+  background-color: rgb(17, 82, 147);
+}
+
+.line {
+  line-height: 0;
+  padding: 5px 0;
+  width: 100%;
+  display: block;
+  white-space: nowrap;
+}
+
+.focus {
+  background-color: rgb(237, 240, 245);
+}
+
+.suggestions {
+  z-index: 3;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 200px;
+  height: 200px;
+  background: cornsilk;
+  border-radius: 6px;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4), 0 4px 4px rgba(0, 0, 0, 0.2);
+  overflow-y: scroll;
+}
+
+.suggestions > div {
+  padding: 3px 10px;
+  font-size: 20px;
+  color: black;
+  border-bottom: 1px solid rgb(197, 185, 135);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.suggestions > div:hover {
+  background-color: rgb(95, 89, 66);
+}
+.suggestions > .focus {
+  background-color: rgb(224, 224, 221);
+}
