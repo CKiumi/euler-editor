@@ -7,5 +7,5 @@ const main = document.getElementById("main");
 });
 const eulerNote = document.getElementById("t") as EulerNote;
 eulerNote.addEventListener("mount", () => {
-  eulerNote.set(["\\sqrt{xxx\\hat{k}}\\hat{xx}", ""]);
+  eulerNote.set(["\\sqrt{xxx}\\hat{xx}", ""]);
 });

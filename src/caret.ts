@@ -9,6 +9,7 @@ import {
   SqrtAtom,
   SupSubAtom,
 } from "eulertex/src/lib";
+import { Suggestion } from "./suggest";
 import { Util } from "./util";
 
 export type Sel = [anchor: number, offset: number];
@@ -81,7 +82,7 @@ export class Caret {
   }
 
   insert(atoms: Atom[]) {
-    if (this.sel !== null) return this.replaceRange(atoms);
+    if (this.sel !== null) return this.replaceRange(atoms, this.range());
     this.target.body.splice(this.pos + 1, 0, ...atoms);
     this.action.render();
     this.set(this.target, this.pos + atoms.length);
@@ -96,7 +97,7 @@ export class Caret {
 
   cut(ev: ClipboardEvent) {
     this.copy(ev);
-    this.replaceRange();
+    this.replaceRange([], this.range());
   }
 
   getValue() {
@@ -248,8 +249,7 @@ export class Caret {
     this.setSel([start, last]);
   };
 
-  replaceRange(newAtoms?: Atom[]) {
-    const range = this.range();
+  replaceRange = (newAtoms: Atom[], range: [number, number]) => {
     this.target.body.splice(range[0] + 1, Math.abs(range[1] - range[0]));
     if (newAtoms) {
       this.target.body.splice(range[0] + 1, 0, ...newAtoms);
@@ -260,7 +260,7 @@ export class Caret {
       this.set(this.target, range[0]);
     }
     this.setSel(null);
-  }
+  };
 
   delete() {
     if (this.isFirst()) {
@@ -377,6 +377,7 @@ export class Caret {
 
   set(atom: GroupAtom, pos: number) {
     [this.target, this.pos] = [atom, pos];
+    Suggestion.set(this.x(), Util.bottom(this.target));
     this.renderCaret();
   }
 

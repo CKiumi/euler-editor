@@ -2,6 +2,7 @@ import "eulertex/css/eulertex.css";
 import "eulertex/css/font.css";
 import { GroupAtom, parse, SymAtom } from "eulertex/src/lib";
 import { Caret } from "./caret";
+import { Suggestion } from "./suggest";
 import { Util } from "./util";
 export class EulerNote extends HTMLElement {
   textarea: HTMLTextAreaElement;
@@ -9,6 +10,7 @@ export class EulerNote extends HTMLElement {
   lines: GroupAtom[] = [];
   lineIndex = 0;
   caret: Caret;
+  variable = ["a", "\\alpha"];
   constructor() {
     super();
     this.append(document.createElement("template").content.cloneNode(true));
@@ -17,6 +19,7 @@ export class EulerNote extends HTMLElement {
     this.textarea = this.children[0] as HTMLTextAreaElement;
     this.field = this.children[1] as HTMLElement;
     const sel = this.field.children[0] as HTMLElement;
+    this.field.insertAdjacentElement("beforeend", Suggestion.element);
     this.addEventListener("focus", () => {
       this.textarea.focus({ preventScroll: true });
     });
@@ -31,6 +34,7 @@ export class EulerNote extends HTMLElement {
       },
       sel
     );
+    Suggestion.setUp(this.caret.set, this.caret.replaceRange);
     this.addEventListener("focus", () => this.textarea.focus());
     this.textarea.addEventListener("input", (ev) =>
       this.input(ev as InputEvent)
@@ -91,14 +95,19 @@ export class EulerNote extends HTMLElement {
     if (!ev.data) return;
     if (/^[a-zA-Z*]+/.test(ev.data)) {
       const atoms = parse(ev.data);
+      Suggestion.add(atoms, this.variable);
       this.caret.insert(atoms);
+      return;
     }
     if (/^[0-9|,]+/.test(ev.data)) {
       this.caret.insert(parse(ev.data));
+      return;
     }
     if (/^[+|-|=]+/.test(ev.data)) {
       this.caret.insert([new SymAtom("bin", ev.data, "Main-R")]);
+      return;
     }
+    Suggestion.reset();
     if (ev.data === "^") this.caret.addSup();
     if (ev.data === "_") this.caret.addSub();
     if (ev.data === "(") this.caret.addPar();
@@ -113,26 +122,37 @@ export class EulerNote extends HTMLElement {
   };
 
   onKeyDown(ev: KeyboardEvent) {
+    if (ev.code == "Enter" && Suggestion.buffer.length > 0) {
+      Suggestion.select();
+      return;
+    }
     if (ev.code == "Enter") this.newLine();
     if (ev.code == "ArrowRight") {
-      if (ev.metaKey && ev.shiftKey) this.caret.selectRight();
+      if (Suggestion.isOpen()) Suggestion.reset();
+      else if (ev.metaKey && ev.shiftKey) this.caret.selectRight();
       else if (ev.shiftKey) this.caret.shiftRight();
       else this.caret.moveRight();
     }
     if (ev.code == "ArrowLeft") {
-      if (ev.metaKey && ev.shiftKey) this.caret.selectLeft();
+      if (Suggestion.isOpen()) Suggestion.reset();
+      else if (ev.metaKey && ev.shiftKey) this.caret.selectLeft();
       else if (ev.shiftKey) this.caret.shiftLeft();
       else this.caret.moveLeft();
     }
     if (ev.code == "ArrowDown") {
       this.caret.setSel(null);
-      if (!this.caret.moveDown() && this.lineIndex !== this.lines.length - 1) {
+      if (Suggestion.isOpen()) Suggestion.down();
+      else if (
+        !this.caret.moveDown() &&
+        this.lineIndex !== this.lines.length - 1
+      ) {
         this.setLine(this.lineIndex + 1, this.caret.x(), null);
       }
     }
     if (ev.code == "ArrowUp") {
       this.caret.setSel(null);
-      if (!this.caret.moveUp() && this.lineIndex !== 0) {
+      if (Suggestion.isOpen()) Suggestion.up();
+      else if (!this.caret.moveUp() && this.lineIndex !== 0) {
         this.setLine(this.lineIndex - 1, this.caret.x(), null);
       }
     }
@@ -143,13 +163,14 @@ export class EulerNote extends HTMLElement {
         }
       } else {
         this.caret.sel !== null
-          ? this.caret.replaceRange()
+          ? this.caret.replaceRange([], this.caret.range())
           : this.caret.delete();
       }
     }
   }
   onPointerDown(ev: PointerEvent) {
     if (ev.shiftKey) return this.caret.extendSel(ev.clientX);
+    Suggestion.reset();
     this.pointAtom([ev.clientX, ev.clientY]);
   }
 
