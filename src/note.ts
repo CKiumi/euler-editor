@@ -27,7 +27,7 @@ export class EulerNote extends HTMLElement {
       {
         focus: this.focus,
         blur: this.blur,
-        render: this.render,
+        render: this.renderLine,
       },
       sel
     );
@@ -53,7 +53,9 @@ export class EulerNote extends HTMLElement {
       elem.classList.add("line");
       return group;
     });
-    this.render();
+    this.lines.forEach(({ elem }) => {
+      elem && this.field.insertAdjacentElement("beforeend", elem);
+    });
   };
 
   newLine() {
@@ -63,7 +65,7 @@ export class EulerNote extends HTMLElement {
     elem.classList.add("line");
     this.lines.splice(this.lineIndex + 1, 0, line);
     ++this.lineIndex;
-    this.render();
+    this.lines[this.lineIndex - 1].elem?.after(elem);
     this.caret.set(this.lines[this.lineIndex], 0);
     this.focus();
   }
@@ -88,7 +90,7 @@ export class EulerNote extends HTMLElement {
     if (/^[0-9|,]+/.test(ev.data)) {
       this.caret.insert(parse(ev.data));
     }
-    if (/^[+|-]+/.test(ev.data)) {
+    if (/^[+|-|=]+/.test(ev.data)) {
       this.caret.insert([new SymAtom("bin", ev.data, "Main-R")]);
     }
     if (ev.data === "^") this.caret.addSup();
@@ -96,15 +98,12 @@ export class EulerNote extends HTMLElement {
     if (ev.data === "(") this.caret.addPar();
   }
 
-  render = () => {
-    this.lines[this.lineIndex].elem?.remove();
+  renderLine = () => {
+    const prev = this.lines[this.lineIndex].elem;
     const elem = this.lines[this.lineIndex].toBox().toHtml();
     elem.classList.add("line");
     this.focus();
-    this.lines.forEach(({ elem }) => elem?.remove());
-    this.lines.forEach(({ elem }) => {
-      elem && this.field.insertAdjacentElement("beforeend", elem);
-    });
+    elem && prev?.replaceWith(elem);
   };
 
   onKeyDown(ev: KeyboardEvent) {
@@ -118,6 +117,18 @@ export class EulerNote extends HTMLElement {
       if (ev.metaKey && ev.shiftKey) this.caret.selectLeft();
       else if (ev.shiftKey) this.caret.shiftLeft();
       else this.caret.moveLeft();
+    }
+    if (ev.code == "ArrowDown") {
+      this.caret.setSel(null);
+      if (this.lineIndex !== this.lines.length - 1) {
+        this.setLine(this.lineIndex + 1, this.caret.x(), null);
+      }
+    }
+    if (ev.code == "ArrowUp") {
+      this.caret.setSel(null);
+      if (this.lineIndex !== 0) {
+        this.setLine(this.lineIndex - 1, this.caret.x(), null);
+      }
     }
     if (ev.code == "Backspace") {
       if (this.lines[this.lineIndex].body.length === 1) {
@@ -136,11 +147,15 @@ export class EulerNote extends HTMLElement {
     this.pointAtom([ev.clientX, ev.clientY]);
   }
 
-  setLine(newIndex: number, x: number, y: number) {
+  setLine(newIndex: number, x: number, y: number | null) {
     this.blur();
     this.lineIndex = newIndex;
     this.focus();
-    this.caret.pointAtom(x, y, this.lines[this.lineIndex]);
+    if (y) {
+      this.caret.pointAtom(x, y, this.lines[this.lineIndex]);
+    } else {
+      this.caret.pointAtomHol(x, this.lines[this.lineIndex]);
+    }
   }
 
   pointAtom(c: [number, number]) {

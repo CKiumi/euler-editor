@@ -1,6 +1,7 @@
 import {
   Atom,
   FirstAtom,
+  FracAtom,
   GroupAtom,
   LRAtom,
   SupSubAtom,
@@ -22,6 +23,10 @@ export class Caret {
     this.elem.style.height = "0";
   }
 
+  x() {
+    return Util.right(this.cur());
+  }
+
   cur() {
     return this.target.body[this.pos];
   }
@@ -38,7 +43,7 @@ export class Caret {
         transform:translate(${x - 1}px,${y}px)`;
     } else {
       this.elem.style.cssText = `height:${10}px; 
-        transform:translate(${x}px,${y - 10}px)`;
+        transform:translate(${x - 1}px,${y - 10}px)`;
     }
     this.elem.classList.remove("EN_caret");
     this.elem.offsetWidth;
