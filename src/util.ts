@@ -1,11 +1,37 @@
-import { Atom, GroupAtom, LRAtom, SupSubAtom } from "eulertex/src/lib";
+import {
+  AccentAtom,
+  Atom,
+  GroupAtom,
+  LRAtom,
+  MatrixAtom,
+  OverlineAtom,
+  SqrtAtom,
+  SupSubAtom,
+} from "eulertex/src/lib";
 
 export module Util {
   export const children = (atom: Atom): Atom[] => {
     if (atom instanceof SupSubAtom) {
-      return [atom, ...recursive(atom.sup), ...recursive(atom.sub)];
-    } else if (atom instanceof LRAtom) {
+      return [
+        atom,
+        ...children(atom.nuc),
+        ...recursive(atom.sup),
+        ...recursive(atom.sub),
+      ];
+    } else if (
+      atom instanceof LRAtom ||
+      atom instanceof SqrtAtom ||
+      atom instanceof AccentAtom ||
+      atom instanceof OverlineAtom
+    ) {
       return [atom, ...recursive(atom.body)];
+    } else if (atom instanceof MatrixAtom) {
+      const children = atom.children.reduce(
+        (prev, cur) =>
+          cur.reduce((prev2, cur2) => [...prev2, ...cur2.body], prev),
+        [] as Atom[]
+      );
+      return [atom, ...children];
     } else return [atom];
   };
 

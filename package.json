@@ -14,7 +14,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "eulertex": "./pkg/eulertex-v0.1.8.tgz"
+    "eulertex": "./pkg/eulertex-v0.1.9.tgz"
   },
   "devDependencies": {
     "@playwright/test": "^1.21.1",

@@ -1,9 +1,12 @@
 import {
+  AccentAtom,
   Atom,
   FirstAtom,
   FracAtom,
   GroupAtom,
   LRAtom,
+  OverlineAtom,
+  SqrtAtom,
   SupSubAtom,
 } from "eulertex/src/lib";
 import { Util } from "./util";
@@ -42,8 +45,9 @@ export class Caret {
       this.elem.style.cssText = `height:${parentRect.height}px; 
         transform:translate(${x - 1}px,${y}px)`;
     } else {
-      this.elem.style.cssText = `height:${10}px; 
-        transform:translate(${x - 1}px,${y - 10}px)`;
+      const [x, y] = this.toReltiveCoord([rect.x + rect.width, rect.y]);
+      this.elem.style.cssText = `height:${rect.height}px; 
+        transform:translate(${x - 1}px,${y + 2}px)`;
     }
     this.elem.classList.remove("EN_caret");
     this.elem.offsetWidth;
@@ -91,24 +95,26 @@ export class Caret {
     }
     if (this.isLast()) {
       if (this.isSup() || this.isSub()) {
-        this.exitSupSub();
+        this.exitSupSub("right");
       } else if (this.isNumer() || this.isDenom()) {
         this.exitFrac();
       } else if (this.isBody()) {
-        this.exitBody();
+        this.exitBody("right");
       }
     } else {
       ++this.pos;
       const cur = this.cur();
       if (cur instanceof SupSubAtom) {
-        if (cur.sup) {
+        if (cur.nuc instanceof LRAtom) {
+          this.set(cur.nuc.body, 0);
+        } else if (cur.sup) {
           this.set(cur.sup, 0);
         } else if (cur.sub) {
           this.set(cur.sub, 0);
         } else {
           throw new Error("SupSubAtom must have sup or sub");
         }
-      } else if (cur instanceof LRAtom) {
+      } else if (cur instanceof LRAtom || cur instanceof SqrtAtom) {
         this.set(cur.body, 0);
       } else if (cur instanceof FracAtom) {
         this.set(cur.numer, 0);
@@ -126,13 +132,12 @@ export class Caret {
     const cur = this.cur();
     if (this.isFirst()) {
       if (this.isSup() || this.isSub()) {
-        this.exitSupSub();
-        this.set(this.target, this.pos - 1);
+        this.exitSupSub("left");
       } else if (this.isNumer() || this.isDenom()) {
         this.exitFrac();
         this.set(this.target, this.pos - 1);
       } else if (this.isBody()) {
-        this.exitBody();
+        this.exitBody("left");
         this.set(this.target, this.pos - 1);
       }
     } else {
@@ -146,7 +151,12 @@ export class Caret {
         }
       } else if (cur instanceof FracAtom) {
         this.set(cur.numer, cur.numer.body.length - 1);
-      } else if (cur instanceof LRAtom) {
+      } else if (
+        cur instanceof LRAtom ||
+        cur instanceof SqrtAtom ||
+        cur instanceof AccentAtom ||
+        cur instanceof OverlineAtom
+      ) {
         this.set(cur.body, cur.body.body.length - 1);
       } else {
         this.set(this.target, this.pos - 1);
@@ -303,6 +313,7 @@ export class Caret {
       }
     );
     const parent = atom.parent as GroupAtom;
+    console.log(atom, parent.body);
     if (parent) {
       this.set(parent, parent.body.indexOf(atom));
       this.renderCaret();
@@ -372,8 +383,16 @@ export class Caret {
   }
 
   isBody() {
-    if (!(this.target.parent instanceof LRAtom)) return false;
-    return this.target === this.target.parent.body;
+    const { parent } = this.target;
+    if (
+      !(parent instanceof LRAtom) &&
+      !(parent instanceof SqrtAtom) &&
+      !(parent instanceof AccentAtom) &&
+      !(parent instanceof OverlineAtom)
+    ) {
+      return false;
+    }
+    return this.target === parent.body;
   }
 
   isEmpty() {
@@ -388,20 +407,30 @@ export class Caret {
     return this.pos === this.target.body.length - 1;
   }
 
-  exitSupSub() {
+  exitSupSub(direction: "left" | "right") {
     const supsub = this.target.parent;
     if (!(supsub instanceof SupSubAtom)) {
       throw new Error(
         "Try exit from sup, however counld not find SupSubAtom as parent"
       );
     }
+
+    if (direction === "left" && supsub.nuc instanceof LRAtom) {
+      this.set(supsub.nuc.body, supsub.nuc.body.body.length - 1);
+      return;
+    }
+
     if (!(supsub.parent instanceof GroupAtom)) {
       throw new Error(
         "Try exit from sup, however counld not find parent of SupSubAtom"
       );
     }
     const newAtom = supsub.parent;
-    this.set(newAtom, newAtom.body.indexOf(supsub));
+    if (direction === "left") {
+      this.set(newAtom, newAtom.body.indexOf(supsub) - 1);
+    } else {
+      this.set(newAtom, newAtom.body.indexOf(supsub));
+    }
   }
 
   exitFrac() {
@@ -420,16 +449,39 @@ export class Caret {
     this.set(newAtom, newAtom.body.indexOf(frac));
   }
 
-  exitBody() {
+  exitBody(direction: "left" | "right") {
     const body = this.target.parent;
-    if (!(body instanceof LRAtom)) {
+    if (
+      !(body instanceof LRAtom) &&
+      !(body instanceof SqrtAtom) &&
+      !(body instanceof AccentAtom) &&
+      !(body instanceof OverlineAtom)
+    ) {
       throw new Error(
         "Try exit from LRAtom body, however counld not find LRAtom as parent"
       );
     }
+    if (body.parent instanceof SupSubAtom) {
+      if (direction === "left") {
+        const newAtom = body.parent.parent;
+        if (!newAtom) throw new Error("");
+        this.set(newAtom, newAtom.body.indexOf(body.parent));
+      } else {
+        const { sup, sub } = body.parent;
+        if (sup) {
+          this.set(sup, 0);
+        } else if (sub) {
+          this.set(sub, 0);
+        } else {
+          throw new Error("Either Sup or Sub must exist");
+        }
+      }
+
+      return;
+    }
     if (!(body.parent instanceof GroupAtom)) {
       throw new Error(
-        "Try exit from sup, however counld not find parent of LRAtom"
+        "Try exit from LRAtom body, however counld not find parent of LRAtom"
       );
     }
     const newAtom = body.parent;
