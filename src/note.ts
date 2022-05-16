@@ -11,7 +11,12 @@ export class EulerNote extends HTMLElement {
   lines: GroupAtom[] = [];
   lineIndex = 0;
   caret: Caret;
-  variable = ["a", "\\alpha"];
+  variable = [
+    "\\alpha",
+    "\\beta",
+    "\\frac{a}{a}",
+    "\\begin{pmatrix}x&x\\\\x&x\\end{pmatrix}",
+  ];
   constructor() {
     super();
     this.append(document.createElement("template").content.cloneNode(true));

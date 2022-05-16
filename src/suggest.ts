@@ -3,7 +3,7 @@ import { Util } from "./util";
 export type SetManager = (target: GroupAtom, pos: number) => void;
 export module Suggestion {
   let replaceRange: (newAtoms: Atom[], range: [number, number]) => void;
-  const candidates: string[] = ["\\sqrt{a}"];
+  const candidates: string[] = ["a", "\\sqrt{a}"];
   let position = 0;
   export const element = document.createElement("div");
   export const buffer: Atom[] = [];
@@ -18,30 +18,37 @@ export module Suggestion {
     replaceRange = fn2;
     reset();
   };
+
   export const reset = () => {
     position = 0;
     buffer.splice(0, buffer.length);
-    element.style.display = "none";
+    element.style.visibility = "hidden";
   };
-  export const isOpen = () => element.style.display !== "none";
+
+  export const isOpen = () => element.style.visibility !== "hidden";
+
   const at = () => element.children[position];
+
   export const add = (atoms: Atom[], variable: string[]) => {
     atoms.forEach((atom) => buffer.push(atom));
     search(variable);
     if (!at()) return;
-    element.style.display = "";
+    element.style.visibility = "visible";
     at().classList.add("focus");
   };
+
   export const select = () => {
     at().dispatchEvent(new Event("click", {}));
     position = 0;
   };
+
   export const up = () => {
     const newPos = position === 0 ? element.children.length - 1 : position - 1;
     at().classList.remove("focus");
     position = newPos;
     at().classList.add("focus");
   };
+
   export const down = () => {
     const newPos = position === element.children.length - 1 ? 0 : position + 1;
     at().classList.remove("focus");
@@ -62,6 +69,7 @@ export module Suggestion {
         const atom = parse(suggested)[0];
         atom.toBox().toHtml();
         const wrapper = document.createElement("div");
+        wrapper.classList.add("hbox");
         atom.elem && wrapper.appendChild(atom.elem);
         div.appendChild(wrapper);
         div.onclick = () => {
@@ -71,6 +79,12 @@ export module Suggestion {
           div.classList.remove("focus");
         };
         element.appendChild(div);
+        const pHeight = 21;
+        const cHeight = wrapper.getBoundingClientRect().height;
+        const multiplier = (0.9 * pHeight) / cHeight;
+        if (multiplier < 1) {
+          wrapper.style.fontSize = multiplier + "em";
+        }
       });
   };
 }
