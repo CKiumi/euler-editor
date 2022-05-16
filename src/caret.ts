@@ -9,6 +9,7 @@ import {
   SqrtAtom,
   SupSubAtom,
 } from "eulertex/src/lib";
+import { setRecord } from "./record";
 import { Suggestion } from "./suggest";
 import { Util } from "./util";
 
@@ -86,6 +87,12 @@ export class Caret {
     this.target.body.splice(this.pos + 1, 0, ...atoms);
     this.action.render();
     this.set(this.target, this.pos + atoms.length);
+    setRecord({
+      action: "insert",
+      manager: this.target,
+      position: this.pos - 1,
+      atoms,
+    });
   }
 
   copy(ev: ClipboardEvent) {
@@ -97,7 +104,7 @@ export class Caret {
 
   cut(ev: ClipboardEvent) {
     this.copy(ev);
-    this.replaceRange([], this.range());
+    this.replaceRange(null, this.range());
   }
 
   getValue() {
@@ -249,10 +256,27 @@ export class Caret {
     this.setSel([start, last]);
   };
 
-  replaceRange = (newAtoms: Atom[], range: [number, number]) => {
-    this.target.body.splice(range[0] + 1, Math.abs(range[1] - range[0]));
+  replaceRange = (newAtoms: Atom[] | null, range: [number, number]) => {
+    const atoms = this.target.body.splice(
+      range[0] + 1,
+      Math.abs(range[1] - range[0])
+    );
+    setRecord({
+      action: "delete",
+      manager: this.target,
+      position: range[0] + 1,
+      atoms,
+      skip: !!newAtoms,
+    });
     if (newAtoms) {
       this.target.body.splice(range[0] + 1, 0, ...newAtoms);
+      setRecord({
+        action: "insert",
+        manager: this.target,
+        position: range[0],
+        atoms: newAtoms,
+        skip: true,
+      });
       this.action.render();
       this.set(this.target, range[0] + 1);
     } else {
@@ -286,8 +310,14 @@ export class Caret {
       }
       return;
     }
-    this.target.body.splice(this.pos, 1);
+    const atom = this.target.body.splice(this.pos, 1)[0];
     this.action.render();
+    setRecord({
+      action: "delete",
+      manager: this.target,
+      position: this.pos,
+      atoms: [atom],
+    });
     this.set(this.target, this.pos - 1);
   }
 
@@ -375,11 +405,12 @@ export class Caret {
     }
   }
 
-  set(atom: GroupAtom, pos: number) {
+  set = (atom: GroupAtom, pos: number, render?: boolean) => {
+    if (render) this.action.render();
     [this.target, this.pos] = [atom, pos];
     Suggestion.set(this.x(), Util.bottom(this.target));
     this.renderCaret();
-  }
+  };
 
   isSup() {
     if (!(this.target.parent instanceof SupSubAtom)) return false;

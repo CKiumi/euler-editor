@@ -2,7 +2,6 @@ import { Atom, GroupAtom, parse } from "eulertex/src/lib";
 import { Util } from "./util";
 export type SetManager = (target: GroupAtom, pos: number) => void;
 export module Suggestion {
-  let setMg: SetManager;
   let replaceRange: (newAtoms: Atom[], range: [number, number]) => void;
   const candidates: string[] = ["\\sqrt{a}"];
   let position = 0;
@@ -12,12 +11,10 @@ export module Suggestion {
     element.style.transform = `translate(${left}px,${top}px)`;
   };
   export const setUp = (
-    fn: SetManager,
     fn2: (newAtoms: Atom[], range: [number, number]) => void
   ) => {
     element.addEventListener("pointerdown", (ev) => ev.stopPropagation());
     element.className = "suggestions";
-    setMg = fn;
     replaceRange = fn2;
     reset();
   };
@@ -27,29 +24,29 @@ export module Suggestion {
     element.style.display = "none";
   };
   export const isOpen = () => element.style.display !== "none";
-  const at = (index: number) => element.children[position];
+  const at = () => element.children[position];
   export const add = (atoms: Atom[], variable: string[]) => {
     atoms.forEach((atom) => buffer.push(atom));
     search(variable);
-    if (!at(0)) return;
+    if (!at()) return;
     element.style.display = "";
-    at(0).classList.add("focus");
+    at().classList.add("focus");
   };
   export const select = () => {
-    at(position).dispatchEvent(new Event("click", {}));
+    at().dispatchEvent(new Event("click", {}));
     position = 0;
   };
   export const up = () => {
     const newPos = position === 0 ? element.children.length - 1 : position - 1;
-    at(position).classList.remove("focus");
+    at().classList.remove("focus");
     position = newPos;
-    at(position).classList.add("focus");
+    at().classList.add("focus");
   };
   export const down = () => {
     const newPos = position === element.children.length - 1 ? 0 : position + 1;
-    at(position).classList.remove("focus");
+    at().classList.remove("focus");
     position = newPos;
-    at(position).classList.add("focus");
+    at().classList.add("focus");
   };
 
   const search = (variable: string[]) => {
@@ -64,9 +61,8 @@ export module Suggestion {
         const div = document.createElement("div");
         const atom = parse(suggested)[0];
         atom.toBox().toHtml();
-        console.log(atom);
         const wrapper = document.createElement("div");
-        wrapper.appendChild(atom.elem!);
+        atom.elem && wrapper.appendChild(atom.elem);
         div.appendChild(wrapper);
         div.onclick = () => {
           const start =

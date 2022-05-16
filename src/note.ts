@@ -2,6 +2,7 @@ import "eulertex/css/eulertex.css";
 import "eulertex/css/font.css";
 import { GroupAtom, parse, SymAtom } from "eulertex/src/lib";
 import { Caret } from "./caret";
+import { redo, undo } from "./record";
 import { Suggestion } from "./suggest";
 import { Util } from "./util";
 export class EulerNote extends HTMLElement {
@@ -34,7 +35,7 @@ export class EulerNote extends HTMLElement {
       },
       sel
     );
-    Suggestion.setUp(this.caret.set, this.caret.replaceRange);
+    Suggestion.setUp(this.caret.replaceRange);
     this.addEventListener("focus", () => this.textarea.focus());
     this.textarea.addEventListener("input", (ev) =>
       this.input(ev as InputEvent)
@@ -92,7 +93,10 @@ export class EulerNote extends HTMLElement {
   }
 
   input(ev: InputEvent) {
-    if (!ev.data) return;
+    if (!ev.data) {
+      Suggestion.reset();
+      return;
+    }
     if (/^[a-zA-Z*]+/.test(ev.data)) {
       const atoms = parse(ev.data);
       Suggestion.add(atoms, this.variable);
@@ -101,16 +105,14 @@ export class EulerNote extends HTMLElement {
     }
     if (/^[0-9|,]+/.test(ev.data)) {
       this.caret.insert(parse(ev.data));
-      return;
     }
     if (/^[+|-|=]+/.test(ev.data)) {
       this.caret.insert([new SymAtom("bin", ev.data, "Main-R")]);
-      return;
     }
-    Suggestion.reset();
     if (ev.data === "^") this.caret.addSup();
     if (ev.data === "_") this.caret.addSub();
     if (ev.data === "(") this.caret.addPar();
+    Suggestion.reset();
   }
 
   renderLine = () => {
@@ -156,6 +158,11 @@ export class EulerNote extends HTMLElement {
         this.setLine(this.lineIndex - 1, this.caret.x(), null);
       }
     }
+    if (ev.metaKey && ev.code == "KeyZ") {
+      ev.shiftKey
+        ? redo(this.caret.set, this.caret.setSel)
+        : undo(this.caret.set, this.caret.setSel);
+    }
     if (ev.code == "Backspace") {
       if (this.lines[this.lineIndex].body.length === 1) {
         if (this.lineIndex !== 0) {
@@ -163,7 +170,7 @@ export class EulerNote extends HTMLElement {
         }
       } else {
         this.caret.sel !== null
-          ? this.caret.replaceRange([], this.caret.range())
+          ? this.caret.replaceRange(null, this.caret.range())
           : this.caret.delete();
       }
     }
