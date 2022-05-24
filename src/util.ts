@@ -117,13 +117,13 @@ export module Util {
       for (let row = 0; row < atom.children.length; row++) {
         for (let col = 0; col < atom.children[row].length; col++) {
           if (col > 0) result += " & ";
-          result = serializeGroupAtom(atom.children[row][col].body);
-          if (row < atom.children.length - 1) {
-            result += " \\\\ ";
-          }
+          result += serializeGroupAtom(atom.children[row][col].body);
         }
-        return `\\begin{pmatrix}${result}\\end{pmatrix}`;
+        if (row < atom.children.length - 1) {
+          result += " \\\\ ";
+        }
       }
+      return `\\begin{pmatrix}${result}\\end{pmatrix}`;
     }
     return "";
   };
