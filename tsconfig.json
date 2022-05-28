@@ -16,5 +16,6 @@
     "noImplicitReturns": true,
     "skipLibCheck": true
   },
+  "exclude": ["engine/**"],
   "include": ["src"]
 }

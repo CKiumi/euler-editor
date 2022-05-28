@@ -9,4 +9,10 @@ export default defineConfig({
     exclude: [...configDefaults.exclude, "test/e2e/*"],
     coverage: { reportsDirectory: "test/coverage" },
   },
+  optimizeDeps: {
+    exclude: ["euler-engine"],
+    esbuildOptions: {
+      target: "es2020",
+    },
+  },
 } as UserConfigExport);

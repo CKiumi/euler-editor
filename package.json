@@ -11,10 +11,12 @@
     "test:all": "tsc --noEmit && eslint . && vitest && playwright test",
     "lint": "tsc --noEmit && eslint .",
     "build": "tsc && vite build",
+    "wasm": "cd ./engine && wasm-pack build --target web && cd ../",
     "preview": "vite preview"
   },
   "dependencies": {
-    "eulertex": "./pkg/eulertex-v0.1.10.tgz"
+    "eulertex": "./pkg/eulertex-v0.1.11.tgz",
+    "euler-engine": "./pkg/euler-engine-v0.0.2.tgz"
   },
   "devDependencies": {
     "@playwright/test": "^1.21.1",
