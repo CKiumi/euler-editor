@@ -77,6 +77,7 @@ export class EulerEditor extends HTMLElement {
   }
 
   set = (latex: string[]) => {
+    this.caret.elem.style.height = "0px";
     this.lines.forEach((elem) => {
       elem.elem?.remove();
     });
@@ -89,6 +90,10 @@ export class EulerEditor extends HTMLElement {
     this.lines.forEach(({ elem }) => {
       elem && this.field.insertAdjacentElement("beforeend", elem);
     });
+  };
+
+  getLatex = (): string[] => {
+    return this.lines.map((line) => Util.serializeGroupAtom(line.body));
   };
 
   newLine() {
