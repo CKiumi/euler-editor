@@ -20,16 +20,27 @@ export class EulerEditor extends HTMLElement {
   constructor() {
     super();
     this.append(document.createElement("template").content.cloneNode(true));
-    this.innerHTML =
-      "<textarea class='EN_textarea'></textarea><span class='EN_container'><div class='EN_selection'></div><span class='EN_caret'></span></span>";
-    this.textarea = this.children[0] as HTMLTextAreaElement;
-    this.field = this.children[1] as HTMLElement;
-    const sel = this.field.children[0] as HTMLElement;
+
+    this.field = document.createElement("span");
+    this.field.className = "EN_container";
+
+    this.textarea = document.createElement("textarea");
+    this.textarea.className = "EN_textarea";
+
     this.field.insertAdjacentElement("beforeend", Suggestion.element);
     this.addEventListener("focus", () => {
       this.textarea.focus({ preventScroll: true });
     });
-    const caret = this.field.children[1] as HTMLElement;
+
+    const sel = document.createElement("div");
+    sel.className = "EN_selection";
+
+    const caret = document.createElement("div");
+    caret.className = "EN_caret";
+
+    this.field.insertAdjacentElement("afterbegin", caret);
+    this.field.insertAdjacentElement("afterbegin", sel);
+
     this.caret = new Caret(
       caret,
       this.field,
@@ -40,6 +51,7 @@ export class EulerEditor extends HTMLElement {
       },
       sel
     );
+
     Suggestion.setUp(this.caret.replaceRange);
     this.addEventListener("focus", () => this.textarea.focus());
     this.textarea.addEventListener("input", (ev) =>
@@ -57,6 +69,8 @@ export class EulerEditor extends HTMLElement {
   }
   connectedCallback(): void {
     this.setAttribute("tabindex", "0");
+    this.insertAdjacentElement("afterbegin", this.textarea);
+    this.insertAdjacentElement("beforeend", this.field);
     this.dispatchEvent(
       new Event("mount", { cancelable: false, bubbles: true, composed: true })
     );
