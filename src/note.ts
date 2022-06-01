@@ -57,7 +57,7 @@ export class EulerEditor extends HTMLElement {
     this.textarea.addEventListener("input", (ev) =>
       this.input(ev as InputEvent)
     );
-    this.field.addEventListener("pointerdown", (ev) => this.onPointerDown(ev));
+    this.addEventListener("pointerdown", (ev) => this.onPointerDown(ev));
     this.textarea.addEventListener("keydown", (ev) => this.onKeyDown(ev));
     this.textarea.addEventListener("cut", (ev) => this.caret.cut(ev));
     this.textarea.addEventListener("copy", (ev) => this.caret.copy(ev));
@@ -77,6 +77,9 @@ export class EulerEditor extends HTMLElement {
   }
 
   set = (latex: string[]) => {
+    this.lines.forEach((elem) => {
+      elem.elem?.remove();
+    });
     this.lines = latex.map((s) => {
       const group = new GroupAtom(parse(s));
       const elem = group.toBox().toHtml();
@@ -213,8 +216,12 @@ export class EulerEditor extends HTMLElement {
 
   pointAtom(c: [number, number]) {
     this.caret.setSel(null);
-    for (const [index, line] of this.lines.entries())
-      if (c[1] < Util.bottom(line)) return this.setLine(index, c[0], c[1]);
+    for (const [index, line] of this.lines.entries()) {
+      if (c[1] < Util.bottom(line)) {
+        return this.setLine(index, c[0], c[1]);
+      }
+    }
+    return this.setLine(this.lines.length - 1, c[0], c[1]);
   }
 
   focus = () => {

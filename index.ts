@@ -19,4 +19,5 @@ collectBtn.onclick = () =>
   eulerNote.caret.insert(parse(collect(eulerNote.caret.getValue())));
 eulerNote.addEventListener("mount", () => {
   eulerNote.set(["\\sqrt{xxx}\\hat{xx}", ""]);
+  eulerNote.set(["\\sqrt{xxx}\\hat{xx}", ""]);
 });

@@ -22,12 +22,15 @@ euler-editor {
 euler-editor,
 math-field {
   border: 1px solid #ddd;
-  border-radius: 5px;
+
   background-color: #fff;
   display: block;
   font-style: normal;
   overflow-x: scroll;
+  cursor: text;
+  min-height: 400px;
 }
+
 .EN_caret {
   border-radius: 2px;
   border-right: 2px rgb(87, 156, 235) solid;
@@ -48,9 +51,8 @@ math-field {
 .EN_container {
   display: block;
   position: relative;
-  width: 100%;
-  overflow: hidden;
-  cursor: text;
+  width: fit-content;
+  min-width: 100%;
 }
 
 .EN_textarea {
@@ -69,6 +71,7 @@ button {
   cursor: pointer;
   transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
 }
+
 button:hover {
   background-color: rgb(17, 82, 147);
 }
@@ -77,7 +80,7 @@ button:hover {
   min-height: 30px;
   line-height: unset !important;
   padding: 5px 1px;
-  width: 100%;
+  min-width: 100%;
   display: flex;
   align-items: center;
   white-space: nowrap;
