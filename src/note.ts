@@ -22,10 +22,10 @@ export class EulerEditor extends HTMLElement {
     this.append(document.createElement("template").content.cloneNode(true));
 
     this.field = document.createElement("span");
-    this.field.className = "EN_container";
+    this.field.className = "EE_container";
 
     this.textarea = document.createElement("textarea");
-    this.textarea.className = "EN_textarea";
+    this.textarea.className = "EE_textarea";
 
     this.field.insertAdjacentElement("beforeend", Suggestion.element);
     this.addEventListener("focus", () => {
@@ -33,10 +33,10 @@ export class EulerEditor extends HTMLElement {
     });
 
     const sel = document.createElement("div");
-    sel.className = "EN_selection";
+    sel.className = "EE_selection";
 
     const caret = document.createElement("div");
-    caret.className = "EN_caret";
+    caret.className = "EE_caret";
 
     this.field.insertAdjacentElement("afterbegin", caret);
     this.field.insertAdjacentElement("afterbegin", sel);

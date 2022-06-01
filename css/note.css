@@ -22,8 +22,8 @@ euler-editor {
 euler-editor,
 math-field {
   border: 1px solid #ddd;
-
-  background-color: #fff;
+  min-height: 100vh;
+  background-color: rgb(235, 235, 235);
   display: block;
   font-style: normal;
   overflow-x: scroll;
@@ -31,7 +31,7 @@ math-field {
   min-height: 400px;
 }
 
-.EN_caret {
+.EE_caret {
   border-radius: 2px;
   border-right: 2px rgb(87, 156, 235) solid;
   position: absolute;
@@ -41,21 +41,20 @@ math-field {
   animation: ML__caret-blink 1.05s step-end forwards infinite;
 }
 
-.EN_selection {
+.EE_selection {
   background: rgb(87, 156, 235, 0.5);
   box-sizing: border-box;
   position: absolute;
-  z-index: 10000;
 }
 
-.EN_container {
+.EE_container {
   display: block;
   position: relative;
   width: fit-content;
   min-width: 100%;
 }
 
-.EN_textarea {
+.EE_textarea {
   position: absolute;
   clip: rect(0 0 0 0);
 }
@@ -77,6 +76,7 @@ button:hover {
 }
 
 .line {
+  position: relative;
   min-height: 30px;
   line-height: unset !important;
   padding: 5px 1px;
@@ -87,7 +87,7 @@ button:hover {
 }
 
 .focus {
-  background-color: rgb(239, 246, 249, 0.6);
+  background-color: rgba(186, 217, 230, 0.4);
 }
 
 .suggestions {

@@ -51,9 +51,9 @@ export class Caret {
       this.elem.style.cssText = `height:${rect.height}px; 
         transform:translate(${x - 1}px,${y + 2}px)`;
     }
-    this.elem.classList.remove("EN_caret");
+    this.elem.classList.remove("EE_caret");
     this.elem.offsetWidth;
-    this.elem.classList.add("EN_caret");
+    this.elem.classList.add("EE_caret");
     return true;
   };
 
@@ -347,21 +347,27 @@ export class Caret {
     }
     this.setSel(null);
     let i = 1;
-    while (atoms[i + 1] && Util.right(atoms[i]) < x) {
+    while (i < atoms.length && Util.right(atoms[i]) < x) {
       i++;
     }
-    const atom = [atoms[i - 1], ...Util.children(atoms[i])].reduce(
-      (prev, cur) => {
-        if (
-          distance([Util.right(cur), Util.yCenter(cur)], [x, y]) <=
-          distance([Util.right(prev), Util.yCenter(prev)], [x, y])
-        ) {
-          return cur;
-        } else return prev;
+    const atom = (() => {
+      if (i === atoms.length) {
+        return atoms[i - 1];
+      } else {
+        return [atoms[i - 1], ...Util.children(atoms[i])].reduce(
+          (prev, cur) => {
+            if (
+              distance([Util.right(cur), Util.yCenter(cur)], [x, y]) <=
+              distance([Util.right(prev), Util.yCenter(prev)], [x, y])
+            ) {
+              return cur;
+            } else return prev;
+          }
+        );
       }
-    );
+    })();
+
     const parent = atom.parent as GroupAtom;
-    console.log(atom, parent.body);
     if (parent) {
       this.set(parent, parent.body.indexOf(atom));
       this.renderCaret();
