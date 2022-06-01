@@ -8,7 +8,7 @@ import {
   OverlineAtom,
   SqrtAtom,
   SupSubAtom,
-} from "eulertex/src/lib";
+} from "euler-tex/src/lib";
 import { setRecord } from "./record";
 import { Suggestion } from "./suggest";
 import { Util } from "./util";

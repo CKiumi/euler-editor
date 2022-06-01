@@ -16,10 +16,10 @@ h2 {
 .box {
   background: none !important;
 }
-euler-note {
+euler-editor {
   padding: 5px;
 }
-euler-note,
+euler-editor,
 math-field {
   border: 1px solid #ddd;
   border-radius: 5px;

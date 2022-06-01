@@ -1,4 +1,4 @@
-import { Atom, GroupAtom } from "eulertex/src/lib";
+import { Atom, GroupAtom } from "euler-tex/src/lib";
 export type SetManager = (
   target: GroupAtom,
   pos: number,

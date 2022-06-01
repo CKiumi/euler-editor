@@ -1,11 +1,11 @@
-import "eulertex/css/eulertex.css";
-import "eulertex/css/font.css";
-import { GroupAtom, parse, SymAtom } from "eulertex/src/lib";
+import "euler-tex/css/eulertex.css";
+import "euler-tex/css/font.css";
+import { GroupAtom, parse, SymAtom } from "euler-tex/src/lib";
 import { Caret } from "./caret";
 import { redo, undo } from "./record";
 import { Suggestion } from "./suggest";
 import { Util } from "./util";
-export class EulerNote extends HTMLElement {
+export class EulerEditor extends HTMLElement {
   textarea: HTMLTextAreaElement;
   field: HTMLElement;
   lines: GroupAtom[] = [];
@@ -213,6 +213,6 @@ export class EulerNote extends HTMLElement {
   };
 }
 
-export default EulerNote;
-if (!customElements?.get("euler-note"))
-  customElements?.define("euler-note", EulerNote);
+export default EulerEditor;
+if (!customElements?.get("euler-editor"))
+  customElements?.define("euler-editor", EulerEditor);

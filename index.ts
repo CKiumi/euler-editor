@@ -1,7 +1,7 @@
-import EulerNote from "./src/note";
+import EulerEditor from "./src/note";
 import init, { collect } from "euler-engine";
-import { parse } from "eulertex/src/lib";
-console.log(import.meta.url);
+import { parse } from "euler-tex/src/lib";
+
 init().then(() => {
   console.log("Wasm initialized!!");
 });
@@ -9,11 +9,11 @@ init().then(() => {
 const main = document.getElementById("main");
 [1].forEach(() => {
   main.innerHTML += `
-  <euler-note id="t"></euler-note>
+  <euler-editor id="t"></euler-editor>
   <button id="collect">Collect</button>
   `;
 });
-const eulerNote = document.getElementById("t") as EulerNote;
+const eulerNote = document.getElementById("t") as EulerEditor;
 const collectBtn = document.getElementById("collect");
 collectBtn.onclick = () =>
   eulerNote.caret.insert(parse(collect(eulerNote.caret.getValue())));

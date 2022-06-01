@@ -1,5 +1,5 @@
 {
-  "name": "eulernote",
+  "name": "euler-editor",
   "private": true,
   "version": "0.0.0",
   "scripts": {
@@ -12,10 +12,11 @@
     "lint": "tsc --noEmit && eslint .",
     "build": "tsc && vite build",
     "wasm": "cd ./engine && wasm-pack build --target web && cd ../",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "pub": "yarn pack && mv euler-editor*.tgz ../euler-note/pkg"
   },
   "dependencies": {
-    "eulertex": "./pkg/eulertex-v0.1.11.tgz",
+    "euler-tex": "./pkg/euler-tex-v0.1.12.tgz",
     "euler-engine": "./pkg/euler-engine-v0.0.2.tgz"
   },
   "devDependencies": {

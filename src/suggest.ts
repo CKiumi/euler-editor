@@ -1,4 +1,4 @@
-import { Atom, GroupAtom, parse } from "eulertex/src/lib";
+import { Atom, GroupAtom, parse } from "euler-tex/src/lib";
 import { Util } from "./util";
 export type SetManager = (target: GroupAtom, pos: number) => void;
 export module Suggestion {

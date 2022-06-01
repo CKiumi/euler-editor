@@ -8,7 +8,7 @@ import {
   SqrtAtom,
   SupSubAtom,
   SymAtom,
-} from "eulertex/src/lib";
+} from "euler-tex/src/lib";
 
 export module Util {
   export const children = (atom: Atom): Atom[] => {
