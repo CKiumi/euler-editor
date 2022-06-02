@@ -1,0 +1,37 @@
+.suggestion {
+  z-index: 3;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 350px;
+  background: rgb(37, 37, 38);
+  border-radius: 3px;
+  overflow-y: scroll;
+}
+
+.suggestion > div {
+  font-size: 13px;
+  height: 22px;
+  padding: 13px 0px 13px 13px;
+  color: #cccccc;
+
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.suggestion .preview {
+  font-size: 15px;
+  width: 55px;
+  text-align: center;
+  fill: #cccccc;
+}
+
+.suggestion > .focus {
+  background-color: rgba(2, 111, 207, 0.662) !important;
+}
+
+.suggestion > div:hover {
+  background-color: rgba(174, 174, 174, 0.12);
+}

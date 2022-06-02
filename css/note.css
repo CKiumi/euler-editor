@@ -89,33 +89,3 @@ button:hover {
 .focus {
   background-color: rgba(186, 217, 230, 0.4);
 }
-
-.suggestions {
-  z-index: 3;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 200px;
-  height: 200px;
-  background: cornsilk;
-  border-radius: 6px;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4), 0 4px 4px rgba(0, 0, 0, 0.2);
-  overflow-y: scroll;
-}
-
-.suggestions > div {
-  height: 25px;
-  padding: 2px 10px;
-  color: black;
-  border-bottom: 1px solid rgb(197, 185, 135);
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.suggestions > div:hover {
-  background-color: rgb(95, 89, 66);
-}
-.suggestions > .focus {
-  background-color: rgb(224, 224, 221);
-}

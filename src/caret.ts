@@ -10,7 +10,6 @@ import {
   SupSubAtom,
 } from "euler-tex/src/lib";
 import { setRecord } from "./record";
-import { Suggestion } from "./suggest";
 import { Util } from "./util";
 
 export type Sel = [anchor: number, offset: number];
@@ -414,7 +413,6 @@ export class Caret {
   set = (atom: GroupAtom, pos: number, render?: boolean) => {
     if (render) this.action.render();
     [this.target, this.pos] = [atom, pos];
-    Suggestion.set(this.x(), Util.bottom(this.target));
     this.renderCaret();
   };
 

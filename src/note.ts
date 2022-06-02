@@ -3,7 +3,7 @@ import "euler-tex/css/font.css";
 import { GroupAtom, parse, SymAtom } from "euler-tex/src/lib";
 import { Caret } from "./caret";
 import { redo, undo } from "./record";
-import { Suggestion } from "./suggest";
+import { Suggestion } from "./suggest/suggest";
 import { Util } from "./util";
 export class EulerEditor extends HTMLElement {
   textarea: HTMLTextAreaElement;
@@ -11,12 +11,6 @@ export class EulerEditor extends HTMLElement {
   lines: GroupAtom[] = [];
   lineIndex = 0;
   caret: Caret;
-  variable = [
-    "\\alpha",
-    "\\beta",
-    "\\frac{a}{a}",
-    "\\begin{pmatrix}x&x\\\\x&x\\end{pmatrix}",
-  ];
   constructor() {
     super();
     this.append(document.createElement("template").content.cloneNode(true));
@@ -27,7 +21,7 @@ export class EulerEditor extends HTMLElement {
     this.textarea = document.createElement("textarea");
     this.textarea.className = "EE_textarea";
 
-    this.field.insertAdjacentElement("beforeend", Suggestion.element);
+    this.field.insertAdjacentElement("beforeend", Suggestion.view.elem);
     this.addEventListener("focus", () => {
       this.textarea.focus({ preventScroll: true });
     });
@@ -52,7 +46,7 @@ export class EulerEditor extends HTMLElement {
       sel
     );
 
-    Suggestion.setUp(this.caret.replaceRange);
+    Suggestion.replaceRange = this.caret.replaceRange;
     this.addEventListener("focus", () => this.textarea.focus());
     this.textarea.addEventListener("input", (ev) =>
       this.input(ev as InputEvent)
@@ -124,12 +118,15 @@ export class EulerEditor extends HTMLElement {
       Suggestion.reset();
       return;
     }
+
     if (/^[a-zA-Z*]+/.test(ev.data)) {
       const atoms = parse(ev.data);
-      Suggestion.add(atoms, this.variable);
+      Suggestion.set(atoms, [this.caret.x(), Util.bottom(this.caret.target)]);
       this.caret.insert(atoms);
       return;
     }
+
+    Suggestion.reset();
     if (/^[0-9|,]+/.test(ev.data)) {
       this.caret.insert(parse(ev.data));
     }
@@ -152,25 +149,25 @@ export class EulerEditor extends HTMLElement {
 
   onKeyDown(ev: KeyboardEvent) {
     if (ev.code == "Enter" && Suggestion.buffer.length > 0) {
-      Suggestion.select();
+      Suggestion.view.select();
       return;
     }
     if (ev.code == "Enter") this.newLine();
     if (ev.code == "ArrowRight") {
-      if (Suggestion.isOpen()) Suggestion.reset();
+      if (Suggestion.view.isOpen()) Suggestion.reset();
       else if (ev.metaKey && ev.shiftKey) this.caret.selectRight();
       else if (ev.shiftKey) this.caret.shiftRight();
       else this.caret.moveRight();
     }
     if (ev.code == "ArrowLeft") {
-      if (Suggestion.isOpen()) Suggestion.reset();
+      if (Suggestion.view.isOpen()) Suggestion.reset();
       else if (ev.metaKey && ev.shiftKey) this.caret.selectLeft();
       else if (ev.shiftKey) this.caret.shiftLeft();
       else this.caret.moveLeft();
     }
     if (ev.code == "ArrowDown") {
       this.caret.setSel(null);
-      if (Suggestion.isOpen()) Suggestion.down();
+      if (Suggestion.view.isOpen()) Suggestion.view.down();
       else if (
         !this.caret.moveDown() &&
         this.lineIndex !== this.lines.length - 1
@@ -180,7 +177,7 @@ export class EulerEditor extends HTMLElement {
     }
     if (ev.code == "ArrowUp") {
       this.caret.setSel(null);
-      if (Suggestion.isOpen()) Suggestion.up();
+      if (Suggestion.view.isOpen()) Suggestion.view.up();
       else if (!this.caret.moveUp() && this.lineIndex !== 0) {
         this.setLine(this.lineIndex - 1, this.caret.x(), null);
       }
