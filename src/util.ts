@@ -9,6 +9,7 @@ import {
   SupSubAtom,
   SymAtom,
 } from "euler-tex/src/lib";
+import { LETTER1, LETTER2 } from "euler-tex/src/parser/command";
 
 export module Util {
   export const children = (atom: Atom): Atom[] => {
@@ -87,6 +88,11 @@ export module Util {
 
   export const serialize = (atom: Atom): string => {
     if (atom instanceof SymAtom) {
+      let result;
+      result = Object.keys(LETTER1).find((key) => LETTER1[key] === atom.char);
+      if (result) return result;
+      result = Object.keys(LETTER2).find((key) => LETTER1[key] === atom.char);
+      if (result) return result;
       return atom.char;
     }
     if (atom instanceof SqrtAtom) {
@@ -110,7 +116,7 @@ export module Util {
       let [sup, sub] = ["", ""];
       if (atom.sup) sup = `^{${serializeGroupAtom(atom.sup.body)}}`;
       if (atom.sub) sub = `_{${serializeGroupAtom(atom.sub.body)}}`;
-      return `${serialize(atom)}${sub}${sup}`;
+      return `${serialize(atom.nuc)}${sub}${sup}`;
     }
     if (atom instanceof MatrixAtom) {
       let result = "";

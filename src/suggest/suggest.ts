@@ -1,47 +1,8 @@
 import { SuggestView } from "./view";
 import { Atom, GroupAtom, latexToHtml, parse } from "euler-tex/src/lib";
 import { Util } from "../util";
+import { LETTER1, LETTER2 } from "euler-tex/src/parser/command";
 
-const SYM = [
-  "alpha",
-  "beta",
-  "chi",
-  "delta",
-  "epsilon",
-  "varepsilon",
-  "eta",
-  "gamma",
-  "iota",
-  "kappa",
-  "lambda",
-  "mu",
-  "nu",
-  "omega",
-  "phi",
-  "varphi",
-  "pi",
-  "psi",
-  "rho",
-  "sigma",
-  "varsigma",
-  "tau",
-  "theta",
-  "vartheta",
-  "upsilon",
-  "xi",
-  "zeta",
-  "Delta",
-  "Gamma",
-  "Lambda",
-  "Omega",
-  "Phi",
-  "Pi",
-  "Psi",
-  "Sigma",
-  "Theta",
-  "Upsilon",
-  "Xi",
-];
 const BLOCK: [string, string][] = [
   ["\\pmatrix", "\\begin{pmatrix}x&x\\\\x&x\\end{pmatrix}"],
   ["\\frac", "\\frac{a}{b}"],
@@ -51,7 +12,8 @@ export module Suggestion {
   export const view = new SuggestView();
   export let replaceRange: (newAtoms: Atom[], range: [number, number]) => void;
   const candidates: [string, string][] = [
-    ...(SYM.map((x) => ["\\" + x, "\\" + x]) as [string, string][]),
+    ...Object.keys(LETTER1).map((x) => [x, x] as [string, string]),
+    ...Object.keys(LETTER2).map((x) => [x, x] as [string, string]),
     ...BLOCK,
   ];
   export const buffer: Atom[] = [];
