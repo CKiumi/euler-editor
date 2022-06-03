@@ -1,6 +1,7 @@
 import {
   AccentAtom,
   Atom,
+  FracAtom,
   GroupAtom,
   LRAtom,
   MatrixAtom,
@@ -20,6 +21,8 @@ export module Util {
         ...recursive(atom.sup),
         ...recursive(atom.sub),
       ];
+    } else if (atom instanceof FracAtom) {
+      return [atom, ...recursive(atom.denom), ...recursive(atom.numer)];
     } else if (
       atom instanceof LRAtom ||
       atom instanceof SqrtAtom ||

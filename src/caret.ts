@@ -5,6 +5,7 @@ import {
   FracAtom,
   GroupAtom,
   LRAtom,
+  MatrixAtom,
   OverlineAtom,
   SqrtAtom,
   SupSubAtom,
@@ -125,6 +126,19 @@ export class Caret {
         this.exitFrac();
       } else if (this.isBody()) {
         this.exitBody("right");
+      } else if (this.isMat()) {
+        const mat = this.target.parent as MatrixAtom;
+        mat.children.forEach((row) => {
+          const column = row.indexOf(this.target);
+          if (column !== -1) {
+            if (column + 1 === row.length) {
+              if (!mat.parent) return;
+              this.set(mat.parent, mat.parent.body.indexOf(mat));
+            } else {
+              this.set(row[column + 1], 0);
+            }
+          }
+        });
       }
     } else {
       ++this.pos;
@@ -143,6 +157,8 @@ export class Caret {
         this.set(cur.body, 0);
       } else if (cur instanceof FracAtom) {
         this.set(cur.numer, 0);
+      } else if (cur instanceof MatrixAtom) {
+        this.set(cur.children[0][0], 0);
       }
     }
     this.renderCaret();
@@ -164,6 +180,19 @@ export class Caret {
       } else if (this.isBody()) {
         this.exitBody("left");
         this.set(this.target, this.pos - 1);
+      } else if (this.isMat()) {
+        const mat = this.target.parent as MatrixAtom;
+        mat.children.forEach((row) => {
+          const column = row.indexOf(this.target);
+          if (column !== -1) {
+            if (column === 0) {
+              if (!mat.parent) return;
+              this.set(mat.parent, mat.parent.body.indexOf(mat) - 1);
+            } else {
+              this.set(row[column - 1], 0);
+            }
+          }
+        });
       }
     } else {
       if (cur instanceof SupSubAtom) {
@@ -183,6 +212,9 @@ export class Caret {
         cur instanceof OverlineAtom
       ) {
         this.set(cur.body, cur.body.body.length - 1);
+      } else if (cur instanceof MatrixAtom) {
+        const child = cur.children[0][cur.children[0].length - 1];
+        this.set(child, child.body.length - 1);
       } else {
         this.set(this.target, this.pos - 1);
       }
@@ -199,6 +231,20 @@ export class Caret {
     } else if (this.isDenom()) {
       if (!(target.parent instanceof FracAtom)) throw new Error("");
       this.pointAtomHol(this.x(), target.parent.numer);
+    } else if (this.isMat()) {
+      const mat = this.target.parent as MatrixAtom;
+      for (const [rowIndex, row] of mat.children.entries()) {
+        const column = row.indexOf(this.target);
+        if (column !== -1) {
+          if (rowIndex === 0) {
+            return false;
+          } else {
+            if (!mat.parent) return;
+            this.pointAtomHol(this.x(), mat.children[rowIndex - 1][column]);
+            return true;
+          }
+        }
+      }
     } else {
       return false;
     }
@@ -215,6 +261,20 @@ export class Caret {
     } else if (this.isNumer()) {
       if (!(target.parent instanceof FracAtom)) throw new Error("");
       this.pointAtomHol(this.x(), target.parent.denom);
+    } else if (this.isMat()) {
+      const mat = this.target.parent as MatrixAtom;
+      for (const [rowIndex, row] of mat.children.entries()) {
+        const column = row.indexOf(this.target);
+        if (column !== -1) {
+          if (rowIndex === mat.children.length - 1) {
+            return false;
+          } else {
+            if (!mat.parent) return;
+            this.pointAtomHol(this.x(), mat.children[rowIndex + 1][column]);
+            return true;
+          }
+        }
+      }
     } else {
       return false;
     }
@@ -447,6 +507,11 @@ export class Caret {
       return false;
     }
     return this.target === parent.body;
+  }
+
+  isMat() {
+    const { parent } = this.target;
+    return parent instanceof MatrixAtom;
   }
 
   isEmpty() {

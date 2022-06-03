@@ -23,7 +23,10 @@ collectBtn.onclick = () => {
 
 eulerNote.addEventListener("mount", () => {
   eulerNote.set(["\\sqrt{xxx}\\hat{xx}", ""]);
-  eulerNote.set(["\\sqrt{xxx}\\hat{xx}", ""]);
+  eulerNote.set([
+    "\\sqrt{xxx}\\hat{xx}",
+    String.raw`\begin{pmatrix}a & b \\ c & d\end{pmatrix}`,
+  ]);
 });
 
 const testSuggest = async () => {
@@ -45,13 +48,10 @@ const testSuggest = async () => {
     preview: latexToHtml(text),
     onClick: () => console.log("clicked " + text),
   }));
-
   const main = document.getElementById("main");
   const autoCompletion = new SuggestView();
   main.append(autoCompletion.elem);
-
   autoCompletion.open(70, 70);
-  console.log(document.fonts.check("12px Math-I"));
   autoCompletion.setList([...blockList, ...symbolList]);
   await wait();
   autoCompletion.up();
