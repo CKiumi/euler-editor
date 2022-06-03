@@ -91,7 +91,7 @@ export module Util {
       let result;
       result = Object.keys(LETTER1).find((key) => LETTER1[key] === atom.char);
       if (result) return result;
-      result = Object.keys(LETTER2).find((key) => LETTER1[key] === atom.char);
+      result = Object.keys(LETTER2).find((key) => LETTER2[key] === atom.char);
       if (result) return result;
       return atom.char;
     }

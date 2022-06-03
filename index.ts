@@ -51,7 +51,7 @@ const testSuggest = async () => {
   main.append(autoCompletion.elem);
 
   autoCompletion.open(70, 70);
-
+  console.log(document.fonts.check("12px Math-I"));
   autoCompletion.setList([...blockList, ...symbolList]);
   await wait();
   autoCompletion.up();

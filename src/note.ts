@@ -1,6 +1,6 @@
 import "euler-tex/css/eulertex.css";
 import "euler-tex/css/font.css";
-import { GroupAtom, parse, SymAtom } from "euler-tex/src/lib";
+import { GroupAtom, loadFont, parse, SymAtom } from "euler-tex/src/lib";
 import { Caret } from "./caret";
 import { redo, undo } from "./record";
 import { Suggestion } from "./suggest/suggest";
@@ -62,6 +62,7 @@ export class EulerEditor extends HTMLElement {
     this.lines = [new GroupAtom([])];
   }
   connectedCallback(): void {
+    loadFont("/node_modules/euler-tex/woff");
     this.setAttribute("tabindex", "0");
     this.insertAdjacentElement("afterbegin", this.textarea);
     this.insertAdjacentElement("beforeend", this.field);
@@ -121,8 +122,8 @@ export class EulerEditor extends HTMLElement {
 
     if (/^[a-zA-Z*]+/.test(ev.data)) {
       const atoms = parse(ev.data);
-      Suggestion.set(atoms, [this.caret.x(), Util.bottom(this.caret.target)]);
       this.caret.insert(atoms);
+      Suggestion.set(atoms, [this.caret.x(), Util.bottom(this.caret.target)]);
       return;
     }
 
