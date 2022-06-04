@@ -1,6 +1,12 @@
 import "euler-tex/css/eulertex.css";
 import "euler-tex/css/font.css";
-import { GroupAtom, loadFont, parse, SymAtom } from "euler-tex/src/lib";
+import {
+  GroupAtom,
+  latexToEditableAtom,
+  loadFont,
+  parse,
+  SymAtom,
+} from "euler-tex/src/lib";
 import { Caret } from "./caret";
 import { redo, undo } from "./record";
 import { Suggestion } from "./suggest/suggest";
@@ -57,7 +63,7 @@ export class EulerEditor extends HTMLElement {
     this.textarea.addEventListener("copy", (ev) => this.caret.copy(ev));
     this.textarea.addEventListener("paste", (ev) => {
       ev.clipboardData &&
-        this.caret.insert(parse(ev.clipboardData.getData("text/plain")));
+        this.caret.insert(parse(ev.clipboardData.getData("text/plain"), true));
     });
     this.lines = [new GroupAtom([])];
   }
@@ -77,9 +83,11 @@ export class EulerEditor extends HTMLElement {
       elem.elem?.remove();
     });
     this.lines = latex.map((s) => {
-      const group = new GroupAtom(parse(s));
-      const elem = group.toBox().toHtml();
-      elem.classList.add("line");
+      const group = latexToEditableAtom(s);
+      if (!group.elem) {
+        throw new Error("latexToEditableAtom not working propery");
+      }
+      group.elem.classList.add("line");
       return group;
     });
     this.lines.forEach(({ elem }) => {
@@ -93,7 +101,7 @@ export class EulerEditor extends HTMLElement {
 
   newLine() {
     this.blur();
-    const line = new GroupAtom([]);
+    const line = new GroupAtom([], true);
     const elem = line.toBox().toHtml();
     elem.classList.add("line");
     this.lines.splice(this.lineIndex + 1, 0, line);
@@ -121,7 +129,7 @@ export class EulerEditor extends HTMLElement {
     }
 
     if (/^[a-zA-Z*]+/.test(ev.data)) {
-      const atoms = parse(ev.data);
+      const atoms = parse(ev.data, true);
       this.caret.insert(atoms);
       Suggestion.set(atoms, [this.caret.x(), Util.bottom(this.caret.target)]);
       return;
@@ -129,7 +137,7 @@ export class EulerEditor extends HTMLElement {
 
     Suggestion.reset();
     if (/^[0-9|,]+/.test(ev.data)) {
-      this.caret.insert(parse(ev.data));
+      this.caret.insert(parse(ev.data, true));
     }
     if (/^[+|-|=]+/.test(ev.data)) {
       this.caret.insert([new SymAtom("bin", ev.data, "Main-R")]);

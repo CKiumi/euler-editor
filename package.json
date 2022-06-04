@@ -16,7 +16,7 @@
     "pub": "yarn pack && mv euler-editor*.tgz ../euler-note/pkg"
   },
   "dependencies": {
-    "euler-tex": "./pkg/euler-tex-v0.1.14.tgz",
+    "euler-tex": "./pkg/euler-tex-v0.2.1.tgz",
     "euler-engine": "./pkg/euler-engine-v0.0.2.tgz"
   },
   "devDependencies": {
