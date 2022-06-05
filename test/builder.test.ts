@@ -11,7 +11,7 @@ import {
   GroupAtom,
   FirstAtom,
 } from "euler-tex/src/lib";
-import { Util } from "../src/util";
+import { Builder, Util } from "../src/util";
 
 test("children", () => {
   const j = new SymAtom("ord", "j", "Math-I");
@@ -70,4 +70,74 @@ test("serialize", () => {
   );
   const supsubatom = new SupSubAtom(j, group, group);
   expect(Util.serialize(supsubatom)).toStrictEqual("j_{j}^{j}");
+});
+
+test("matrix builder", () => {
+  const j = new SymAtom("ord", "j", "Math-I");
+  const group = new GroupAtom([j], true);
+  const targetGroup = new GroupAtom([j], true);
+  const mat = new MatrixAtom(
+    [
+      [group, group],
+      [targetGroup, group],
+    ],
+    "pmatrix"
+  );
+  expect(Builder.getCurRowCol(targetGroup, mat)).toEqual([1, 0]);
+  expect(() => Builder.addRow(mat, -1)).toThrow();
+  expect(() => Builder.addRow(mat, 3)).toThrow();
+  Builder.addRow(mat, 2);
+
+  expect(mat).toEqual(
+    new MatrixAtom(
+      [
+        [group, group],
+        [group, group],
+        [new GroupAtom([], true), new GroupAtom([], true)],
+      ],
+      "pmatrix"
+    )
+  );
+  Builder.addRow(mat, 0);
+  expect(mat).toEqual(
+    new MatrixAtom(
+      [
+        [new GroupAtom([], true), new GroupAtom([], true)],
+        [group, group],
+        [group, group],
+        [new GroupAtom([], true), new GroupAtom([], true)],
+      ],
+      "pmatrix"
+    )
+  );
+  Builder.addRow(mat, 1);
+  expect(mat).toEqual(
+    new MatrixAtom(
+      [
+        [new GroupAtom([], true), new GroupAtom([], true)],
+        [new GroupAtom([], true), new GroupAtom([], true)],
+        [group, group],
+        [group, group],
+        [new GroupAtom([], true), new GroupAtom([], true)],
+      ],
+      "pmatrix"
+    )
+  );
+  const mat2 = new MatrixAtom(
+    [
+      [group, group],
+      [targetGroup, group],
+    ],
+    "pmatrix"
+  );
+  Builder.addColumn(mat2, 2);
+  expect(mat2).toEqual(
+    new MatrixAtom(
+      [
+        [group, group, new GroupAtom([], true)],
+        [targetGroup, group, new GroupAtom([], true)],
+      ],
+      "pmatrix"
+    )
+  );
 });

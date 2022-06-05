@@ -488,7 +488,7 @@ export class Caret {
   }
 
   isBody() {
-    if (!this.target.parent) throw new Error(" Current target has no parent");
+    if (!this.target.parent) return false;
     return Util.isSingleBody(this.target.parent);
   }
 

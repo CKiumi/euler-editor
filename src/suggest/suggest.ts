@@ -36,7 +36,7 @@ export module Suggestion {
           onClick: () => {
             const start =
               (buffer[0].parent as GroupAtom).body.indexOf(buffer[0]) - 1;
-            replaceRange(parse(preview), [start, start + buffer.length]);
+            replaceRange(parse(preview, true), [start, start + buffer.length]);
           },
         };
       });

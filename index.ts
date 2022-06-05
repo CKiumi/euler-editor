@@ -1,3 +1,4 @@
+import { MatBuilderView } from "./src/mat";
 import init from "euler-engine";
 import { latexToHtml } from "euler-tex/src/lib";
 import EulerEditor from "./src/note";
@@ -11,14 +12,20 @@ const main = document.getElementById("main");
 [1].forEach(() => {
   main.innerHTML += `
   <button id="collect">Suggestion Test</button>
+  <button id="mat-builder-test">MatrixBuilder Test</button>
   <euler-editor id="t"></euler-editor>
   `;
 });
 const eulerNote = document.getElementById("t") as EulerEditor;
 const collectBtn = document.getElementById("collect");
+const matBuilderBtn = document.getElementById("mat-builder-test");
 collectBtn.onclick = () => {
   // eulerNote.caret.insert(parse(collect(eulerNote.caret.getValue())));/
   testSuggest();
+};
+
+matBuilderBtn.onclick = () => {
+  testMatBuilder();
 };
 
 eulerNote.addEventListener("mount", () => {
@@ -28,15 +35,13 @@ eulerNote.addEventListener("mount", () => {
     String.raw`\begin{pmatrix}a & b \\ c & d\end{pmatrix}`,
   ]);
 });
-
+const wait = () => new Promise((resolve) => setTimeout(resolve, 400));
 const testSuggest = async () => {
   const Symbol = ["\\alpha", "\\beta", "\\gamma", "\\zeta"];
   const BLOCK = [
     ["\\pmatrix", "\\begin{pmatrix}x&x\\\\x&x\\end{pmatrix}"],
     ["\\frac", "\\frac{a}{b}"],
   ];
-
-  const wait = () => new Promise((resolve) => setTimeout(resolve, 400));
 
   const blockList = BLOCK.map(([text, prev]) => ({
     text,
@@ -73,4 +78,15 @@ const testSuggest = async () => {
   autoCompletion.open(170, 170);
   await wait();
   autoCompletion.select();
+};
+
+const testMatBuilder = async () => {
+  const main = document.getElementById("main");
+  const matBilder = new MatBuilderView();
+  main.append(matBilder.elem);
+  matBilder.open(400, 0);
+  await wait();
+  matBilder.select("top");
+  await wait();
+  matBilder.close();
 };

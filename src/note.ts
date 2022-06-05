@@ -4,13 +4,15 @@ import {
   GroupAtom,
   latexToEditableAtom,
   loadFont,
+  MatrixAtom,
   parse,
   SymAtom,
 } from "euler-tex/src/lib";
 import { Caret } from "./caret";
+import { MatrixBuilder } from "./mat";
 import { redo, undo } from "./record";
 import { Suggestion } from "./suggest/suggest";
-import { Util } from "./util";
+import { Builder, Util } from "./util";
 export class EulerEditor extends HTMLElement {
   textarea: HTMLTextAreaElement;
   field: HTMLElement;
@@ -28,6 +30,8 @@ export class EulerEditor extends HTMLElement {
     this.textarea.className = "EE_textarea";
 
     this.field.insertAdjacentElement("beforeend", Suggestion.view.elem);
+    this.field.insertAdjacentElement("beforeend", MatrixBuilder.view.elem);
+
     this.addEventListener("focus", () => {
       this.textarea.focus({ preventScroll: true });
     });
@@ -161,20 +165,47 @@ export class EulerEditor extends HTMLElement {
       Suggestion.view.select();
       return;
     }
-    if (ev.code == "Enter") this.newLine();
+    if (ev.code == "Enter") {
+      if (MatrixBuilder.view.isOpen()) {
+        const mat = this.caret.target.parent as MatrixAtom;
+        const [rowNum, colNum] = Builder.getCurRowCol(this.caret.target, mat);
+        const [newR, newC] = MatrixBuilder.add(mat, rowNum, colNum);
+        MatrixBuilder.reset();
+        this.renderLine();
+        this.caret.set(mat.children[newR][newC], 0);
+        return;
+      }
+      if (this.caret.target.parent instanceof MatrixAtom) {
+        MatrixBuilder.set(this.caret.x(), Util.bottom(this.caret.target));
+      } else {
+        this.newLine();
+      }
+    }
     if (ev.code == "ArrowRight") {
+      if (MatrixBuilder.view.isOpen()) {
+        MatrixBuilder.view.select("right");
+        return;
+      }
       if (Suggestion.view.isOpen()) Suggestion.reset();
       else if (ev.metaKey && ev.shiftKey) this.caret.selectRight();
       else if (ev.shiftKey) this.caret.shiftRight();
       else this.caret.moveRight();
     }
     if (ev.code == "ArrowLeft") {
+      if (MatrixBuilder.view.isOpen()) {
+        MatrixBuilder.view.select("left");
+        return;
+      }
       if (Suggestion.view.isOpen()) Suggestion.reset();
       else if (ev.metaKey && ev.shiftKey) this.caret.selectLeft();
       else if (ev.shiftKey) this.caret.shiftLeft();
       else this.caret.moveLeft();
     }
     if (ev.code == "ArrowDown") {
+      if (MatrixBuilder.view.isOpen()) {
+        MatrixBuilder.view.select("bottom");
+        return;
+      }
       this.caret.setSel(null);
       if (Suggestion.view.isOpen()) Suggestion.view.down();
       else if (
@@ -185,6 +216,10 @@ export class EulerEditor extends HTMLElement {
       }
     }
     if (ev.code == "ArrowUp") {
+      if (MatrixBuilder.view.isOpen()) {
+        MatrixBuilder.view.select("top");
+        return;
+      }
       this.caret.setSel(null);
       if (Suggestion.view.isOpen()) Suggestion.view.up();
       else if (!this.caret.moveUp() && this.lineIndex !== 0) {
@@ -211,6 +246,7 @@ export class EulerEditor extends HTMLElement {
   onPointerDown(ev: PointerEvent) {
     if (ev.shiftKey) return this.caret.extendSel(ev.clientX);
     Suggestion.reset();
+    MatrixBuilder.reset();
     this.pointAtom([ev.clientX, ev.clientY]);
   }
 
