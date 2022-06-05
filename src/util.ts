@@ -103,6 +103,11 @@ export module Util {
     if (atom instanceof SqrtAtom) {
       return `\\sqrt{${serializeGroupAtom(atom.body.body)}}`;
     }
+    if (atom instanceof FracAtom) {
+      return `\\frac{${serializeGroupAtom(
+        atom.numer.body
+      )}}{${serializeGroupAtom(atom.denom.body)}}`;
+    }
     if (atom instanceof OverlineAtom) {
       return `\\overline{${serializeGroupAtom(atom.body.body)}}`;
     }
