@@ -1,13 +1,10 @@
 import {
-  AccentAtom,
   Atom,
   FirstAtom,
   FracAtom,
   GroupAtom,
   LRAtom,
   MatrixAtom,
-  OverlineAtom,
-  SqrtAtom,
   SupSubAtom,
 } from "euler-tex/src/lib";
 import { setRecord } from "./record";
@@ -153,7 +150,7 @@ export class Caret {
         } else {
           throw new Error("SupSubAtom must have sup or sub");
         }
-      } else if (cur instanceof LRAtom || cur instanceof SqrtAtom) {
+      } else if (Util.isSingleBody(cur)) {
         this.set(cur.body, 0);
       } else if (cur instanceof FracAtom) {
         this.set(cur.numer, 0);
@@ -205,12 +202,7 @@ export class Caret {
         }
       } else if (cur instanceof FracAtom) {
         this.set(cur.numer, cur.numer.body.length - 1);
-      } else if (
-        cur instanceof LRAtom ||
-        cur instanceof SqrtAtom ||
-        cur instanceof AccentAtom ||
-        cur instanceof OverlineAtom
-      ) {
+      } else if (Util.isSingleBody(cur)) {
         this.set(cur.body, cur.body.body.length - 1);
       } else if (cur instanceof MatrixAtom) {
         const child = cur.children[0][cur.children[0].length - 1];
@@ -496,16 +488,8 @@ export class Caret {
   }
 
   isBody() {
-    const { parent } = this.target;
-    if (
-      !(parent instanceof LRAtom) &&
-      !(parent instanceof SqrtAtom) &&
-      !(parent instanceof AccentAtom) &&
-      !(parent instanceof OverlineAtom)
-    ) {
-      return false;
-    }
-    return this.target === parent.body;
+    if (!this.target.parent) throw new Error(" Current target has no parent");
+    return Util.isSingleBody(this.target.parent);
   }
 
   isMat() {
@@ -569,14 +553,9 @@ export class Caret {
 
   exitBody(direction: "left" | "right") {
     const body = this.target.parent;
-    if (
-      !(body instanceof LRAtom) &&
-      !(body instanceof SqrtAtom) &&
-      !(body instanceof AccentAtom) &&
-      !(body instanceof OverlineAtom)
-    ) {
+    if (!Util.isSingleBody(body)) {
       throw new Error(
-        "Try exit from LRAtom body, however counld not find LRAtom as parent"
+        "Try exit from Single body atom, however counld not find Single body atom as parent"
       );
     }
     if (body.parent instanceof SupSubAtom) {

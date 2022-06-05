@@ -38,7 +38,7 @@ export module Util {
   };
 
   export const isSingleBody = (
-    atom: Atom
+    atom: Atom | null
   ): atom is LRAtom | SqrtAtom | AccentAtom | OverlineAtom => {
     return (
       atom instanceof LRAtom ||
