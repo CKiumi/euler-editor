@@ -14,36 +14,38 @@ import { LETTER1, LETTER2 } from "euler-tex/src/parser/command";
 
 export module Util {
   export const children = (atom: Atom): Atom[] => {
-    if (atom instanceof SupSubAtom) {
+    if (atom instanceof GroupAtom) {
+      return atom.body.flatMap((atom) => children(atom));
+    } else if (atom instanceof SupSubAtom) {
+      const nucs = children(atom.nuc);
+      nucs.pop();
       return [
+        ...nucs,
+        ...(atom.sup ? children(atom.sup) : []),
+        ...(atom.sub ? children(atom.sub) : []),
         atom,
-        ...children(atom.nuc),
-        ...recursive(atom.sup),
-        ...recursive(atom.sub),
       ];
     } else if (atom instanceof FracAtom) {
-      return [atom, ...recursive(atom.denom), ...recursive(atom.numer)];
-    } else if (
+      return [...children(atom.denom), ...children(atom.numer), atom];
+    } else if (isSingleBody(atom)) {
+      return [...children(atom.body), atom];
+    } else if (atom instanceof MatrixAtom) {
+      const rows = atom.children.flatMap((row) =>
+        row.flatMap((group) => children(group))
+      );
+      return [...rows, atom];
+    } else return [atom];
+  };
+
+  export const isSingleBody = (
+    atom: Atom
+  ): atom is LRAtom | SqrtAtom | AccentAtom | OverlineAtom => {
+    return (
       atom instanceof LRAtom ||
       atom instanceof SqrtAtom ||
       atom instanceof AccentAtom ||
       atom instanceof OverlineAtom
-    ) {
-      return [atom, ...recursive(atom.body)];
-    } else if (atom instanceof MatrixAtom) {
-      const children = atom.children.reduce(
-        (prev, cur) =>
-          cur.reduce((prev2, cur2) => [...prev2, ...cur2.body], prev),
-        [] as Atom[]
-      );
-      return [atom, ...children];
-    } else return [atom];
-  };
-
-  const recursive = (group?: GroupAtom): Atom[] => {
-    if (!group) return [];
-    const init: Atom[] = [];
-    return group.body.reduce((prev, cur) => [...prev, ...children(cur)], init);
+    );
   };
 
   export const right = (atom: Atom): number => {

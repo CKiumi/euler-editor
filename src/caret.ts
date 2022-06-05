@@ -22,7 +22,7 @@ export class Caret {
     public field: HTMLElement,
     public action: Action,
     public selElem: HTMLElement,
-    public target: GroupAtom = new GroupAtom([]),
+    public target: GroupAtom = new GroupAtom([], true),
     public pos: number = 0
   ) {
     this.elem.style.height = "0";
@@ -425,7 +425,6 @@ export class Caret {
         );
       }
     })();
-
     const parent = atom.parent as GroupAtom;
     if (parent) {
       this.set(parent, parent.body.indexOf(atom));
@@ -438,8 +437,8 @@ export class Caret {
     if (atom instanceof FirstAtom) return;
     const isSupBox = atom instanceof SupSubAtom && !atom.sup;
     const newSupSub = isSupBox
-      ? new SupSubAtom(atom.nuc, new GroupAtom([]), atom.sub)
-      : new SupSubAtom(atom, new GroupAtom([]));
+      ? new SupSubAtom(atom.nuc, new GroupAtom([], true), atom.sub)
+      : new SupSubAtom(atom, new GroupAtom([], true));
     this.delete();
     this.insert([newSupSub]);
     this.moveLeft();
@@ -449,7 +448,7 @@ export class Caret {
     const atom = this.cur();
     if (atom instanceof FirstAtom) return;
     const isSubBox = atom instanceof SupSubAtom && !atom.sub;
-    const sub = new GroupAtom([]);
+    const sub = new GroupAtom([], true);
     const newSupSub = isSubBox
       ? new SupSubAtom(atom.nuc, atom.sup, sub)
       : new SupSubAtom(atom, undefined, sub);
@@ -463,9 +462,9 @@ export class Caret {
     if (this.sel !== null) {
       const [start, end] = [...this.sel].sort((a, b) => a - b);
       const body = this.target.body.slice(start + 1, end + 1);
-      this.insert([new LRAtom("(", ")", new GroupAtom(body))]);
+      this.insert([new LRAtom("(", ")", new GroupAtom(body, true))]);
     } else {
-      this.insert([new LRAtom("(", ")", new GroupAtom([]))]);
+      this.insert([new LRAtom("(", ")", new GroupAtom([], true))]);
       this.moveLeft();
     }
   }

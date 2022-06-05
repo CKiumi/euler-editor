@@ -24,7 +24,7 @@ collectBtn.onclick = () => {
 eulerNote.addEventListener("mount", () => {
   eulerNote.set(["\\sqrt{xxx}\\hat{xx}", ""]);
   eulerNote.set([
-    "\\sqrt{xxx}\\hat{xx}",
+    "\\sqrt{xxx}\\hat{xx}\\sum^x_x",
     String.raw`\begin{pmatrix}a & b \\ c & d\end{pmatrix}`,
   ]);
 });
