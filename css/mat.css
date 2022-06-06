@@ -37,3 +37,35 @@
 .mat-builder > div:nth-child(4) {
   top: 30px;
 }
+
+.mat-destructor {
+  z-index: 10;
+  position: fixed;
+  top: -25px;
+  left: -60px;
+}
+
+.mat-destructor > div {
+  position: absolute;
+  width: 100px;
+  height: 25px;
+  background: rgb(37, 37, 38);
+  color: #cccccc;
+  border-radius: 3px;
+  font-size: 12px;
+  display: flex;
+  justify-content: center;
+  line-height: 25px;
+}
+
+.mat-destructor > div.focus {
+  background: rgb(165, 4, 4);
+}
+
+.mat-destructor > div:first-child {
+  left: -50px;
+}
+
+.mat-destructor > div:nth-child(2) {
+  top: -30px;
+}

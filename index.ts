@@ -84,7 +84,7 @@ const testMatBuilder = async () => {
   const main = document.getElementById("main");
   const matBilder = new MatBuilderView();
   main.append(matBilder.elem);
-  matBilder.open(400, 0);
+  matBilder.open(400, 400);
   await wait();
   matBilder.select("top");
   await wait();

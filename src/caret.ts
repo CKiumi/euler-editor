@@ -95,7 +95,6 @@ export class Caret {
   copy(ev: ClipboardEvent) {
     const latex = this.getValue();
     if (latex) ev.clipboardData?.setData("text/plain", latex);
-    console.log("first");
     ev.preventDefault();
   }
 

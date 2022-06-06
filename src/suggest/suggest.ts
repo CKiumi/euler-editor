@@ -4,6 +4,8 @@ import { Util } from "../util";
 import { LETTER1, LETTER2 } from "euler-tex/src/parser/command";
 
 const BLOCK: [string, string][] = [
+  ["\\sum", "\\sum^x_x"],
+  ["\\int", "\\int^x_x"],
   ["\\pmatrix", "\\begin{pmatrix}x&x\\\\x&x\\end{pmatrix}"],
   ["\\frac", "\\frac{a}{b}"],
   ["\\sqrt", "\\sqrt{a}"],
@@ -40,6 +42,7 @@ export module Suggestion {
           },
         };
       });
+    if (list.length === 0) reset();
     view.setList(list);
   };
 }

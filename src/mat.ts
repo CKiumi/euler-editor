@@ -11,8 +11,8 @@ export class MatBuilderView {
   pos = 0;
   constructor() {
     this.elem.className = "mat-builder";
-    this.bottom.innerText = "Add row below";
-    this.top.innerText = "Add row Above";
+    this.bottom.innerText = "Add Row below";
+    this.top.innerText = "Add Row Above";
     this.right.innerText = "Add Column Right";
     this.left.innerText = "Add Column Left";
     this.elem.style.visibility = "hidden";
@@ -33,6 +33,40 @@ export class MatBuilderView {
   }
 
   select(direction: "left" | "right" | "top" | "bottom") {
+    this[this.direction].className = "";
+    this.direction = direction;
+    this[direction].className = "focus";
+  }
+}
+
+export class MatDestructerView {
+  elem: HTMLDivElement = document.createElement("div");
+  left: HTMLDivElement = document.createElement("div");
+  top: HTMLDivElement = document.createElement("div");
+  direction: "left" | "top" = "left";
+  pos = 0;
+  constructor() {
+    this.elem.className = "mat-destructor";
+    this.top.innerText = "Delete Column";
+    this.left.innerText = "Delete Row";
+    this.elem.style.visibility = "hidden";
+    this.elem.append(this.left, this.top);
+    this.elem.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+    this.select("left");
+  }
+
+  isOpen = () => this.elem.style.visibility !== "hidden";
+
+  open(left: number, top: number) {
+    this.elem.style.visibility = "unset";
+    this.elem.style.transform = `translate(${left}px,${top}px)`;
+  }
+
+  close() {
+    this.elem.style.visibility = "hidden";
+  }
+
+  select(direction: "left" | "top") {
     this[this.direction].className = "";
     this.direction = direction;
     this[direction].className = "focus";
@@ -65,6 +99,34 @@ export module MatrixBuilder {
       case "right":
         Builder.addColumn(mat, col + 1);
         return [row, col + 1];
+    }
+  };
+}
+
+export module MatrixDestructor {
+  export const view = new MatDestructerView();
+
+  export const reset = () => {
+    view.select("left");
+    view.close();
+  };
+
+  export const set = (left: number, top: number) => {
+    view.open(left, top);
+  };
+
+  export const remove = (mat: MatrixAtom, row: number, col: number) => {
+    switch (view.direction) {
+      case "top":
+        Builder.deleteCol(mat, col);
+        return [
+          row,
+          Math.min(col, Math.max(...mat.children.map((row) => row.length)) - 1),
+        ];
+
+      case "left":
+        Builder.deleteRow(mat, row);
+        return [Math.min(row, mat.children.length - 1), col];
     }
   };
 }

@@ -9,7 +9,7 @@ import {
   SymAtom,
 } from "euler-tex/src/lib";
 import { Caret } from "./caret";
-import { MatrixBuilder } from "./mat";
+import { MatrixBuilder, MatrixDestructor } from "./mat";
 import { redo, undo } from "./record";
 import { Suggestion } from "./suggest/suggest";
 import { Builder, Util } from "./util";
@@ -31,6 +31,7 @@ export class EulerEditor extends HTMLElement {
 
     this.field.insertAdjacentElement("beforeend", Suggestion.view.elem);
     this.field.insertAdjacentElement("beforeend", MatrixBuilder.view.elem);
+    this.field.insertAdjacentElement("beforeend", MatrixDestructor.view.elem);
 
     this.addEventListener("focus", () => {
       this.textarea.focus({ preventScroll: true });
@@ -166,6 +167,9 @@ export class EulerEditor extends HTMLElement {
       return;
     }
     if (ev.code == "Enter") {
+      if (MatrixDestructor.view.isOpen()) {
+        return;
+      }
       if (MatrixBuilder.view.isOpen()) {
         const mat = this.caret.target.parent as MatrixAtom;
         const [rowNum, colNum] = Builder.getCurRowCol(this.caret.target, mat);
@@ -175,7 +179,8 @@ export class EulerEditor extends HTMLElement {
         this.caret.set(mat.children[newR][newC], 0);
         return;
       }
-      if (this.caret.target.parent instanceof MatrixAtom) {
+
+      if (this.caret.isMat()) {
         MatrixBuilder.set(this.caret.x(), Util.bottom(this.caret.target));
       } else {
         this.newLine();
@@ -184,6 +189,10 @@ export class EulerEditor extends HTMLElement {
     if (ev.code == "ArrowRight") {
       if (MatrixBuilder.view.isOpen()) {
         MatrixBuilder.view.select("right");
+        return;
+      }
+      if (MatrixDestructor.view.isOpen()) {
+        MatrixDestructor.reset();
         return;
       }
       if (Suggestion.view.isOpen()) Suggestion.reset();
@@ -196,6 +205,10 @@ export class EulerEditor extends HTMLElement {
         MatrixBuilder.view.select("left");
         return;
       }
+      if (MatrixDestructor.view.isOpen()) {
+        MatrixDestructor.view.select("left");
+        return;
+      }
       if (Suggestion.view.isOpen()) Suggestion.reset();
       else if (ev.metaKey && ev.shiftKey) this.caret.selectLeft();
       else if (ev.shiftKey) this.caret.shiftLeft();
@@ -204,6 +217,10 @@ export class EulerEditor extends HTMLElement {
     if (ev.code == "ArrowDown") {
       if (MatrixBuilder.view.isOpen()) {
         MatrixBuilder.view.select("bottom");
+        return;
+      }
+      if (MatrixDestructor.view.isOpen()) {
+        MatrixDestructor.reset();
         return;
       }
       this.caret.setSel(null);
@@ -218,6 +235,10 @@ export class EulerEditor extends HTMLElement {
     if (ev.code == "ArrowUp") {
       if (MatrixBuilder.view.isOpen()) {
         MatrixBuilder.view.select("top");
+        return;
+      }
+      if (MatrixDestructor.view.isOpen()) {
+        MatrixDestructor.view.select("top");
         return;
       }
       this.caret.setSel(null);
@@ -236,6 +257,16 @@ export class EulerEditor extends HTMLElement {
         if (this.lineIndex !== 0) {
           this.deleteLine();
         }
+      } else if (MatrixDestructor.view.isOpen()) {
+        const mat = this.caret.target.parent as MatrixAtom;
+        const [rowNum, colNum] = Builder.getCurRowCol(this.caret.target, mat);
+        const [newR, newC] = MatrixDestructor.remove(mat, rowNum, colNum);
+        MatrixDestructor.reset();
+        this.renderLine();
+        this.caret.set(mat.children[newR][newC], 0);
+        return;
+      } else if (this.caret.isMat() && this.caret.isFirst()) {
+        MatrixDestructor.set(this.caret.x(), Util.bottom(this.caret.target));
       } else {
         this.caret.sel !== null
           ? this.caret.replaceRange(null, this.caret.range())
@@ -247,6 +278,7 @@ export class EulerEditor extends HTMLElement {
     if (ev.shiftKey) return this.caret.extendSel(ev.clientX);
     Suggestion.reset();
     MatrixBuilder.reset();
+    MatrixDestructor.reset();
     this.pointAtom([ev.clientX, ev.clientY]);
   }
 

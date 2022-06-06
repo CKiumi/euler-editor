@@ -86,58 +86,61 @@ test("matrix builder", () => {
   expect(Builder.getCurRowCol(targetGroup, mat)).toEqual([1, 0]);
   expect(() => Builder.addRow(mat, -1)).toThrow();
   expect(() => Builder.addRow(mat, 3)).toThrow();
+  expect(() => Builder.deleteRow(mat, 2)).toThrow();
   Builder.addRow(mat, 2);
 
   expect(mat).toEqual(
-    new MatrixAtom(
-      [
-        [group, group],
-        [group, group],
-        [new GroupAtom([], true), new GroupAtom([], true)],
-      ],
-      "pmatrix"
-    )
+    new MatrixAtom([
+      [group, group],
+      [group, group],
+      [new GroupAtom([], true), new GroupAtom([], true)],
+    ])
   );
   Builder.addRow(mat, 0);
   expect(mat).toEqual(
-    new MatrixAtom(
-      [
-        [new GroupAtom([], true), new GroupAtom([], true)],
-        [group, group],
-        [group, group],
-        [new GroupAtom([], true), new GroupAtom([], true)],
-      ],
-      "pmatrix"
-    )
+    new MatrixAtom([
+      [new GroupAtom([], true), new GroupAtom([], true)],
+      [group, group],
+      [group, group],
+      [new GroupAtom([], true), new GroupAtom([], true)],
+    ])
   );
   Builder.addRow(mat, 1);
   expect(mat).toEqual(
-    new MatrixAtom(
-      [
-        [new GroupAtom([], true), new GroupAtom([], true)],
-        [new GroupAtom([], true), new GroupAtom([], true)],
-        [group, group],
-        [group, group],
-        [new GroupAtom([], true), new GroupAtom([], true)],
-      ],
-      "pmatrix"
-    )
-  );
-  const mat2 = new MatrixAtom(
-    [
+    new MatrixAtom([
+      [new GroupAtom([], true), new GroupAtom([], true)],
+      [new GroupAtom([], true), new GroupAtom([], true)],
       [group, group],
-      [targetGroup, group],
-    ],
-    "pmatrix"
+      [group, group],
+      [new GroupAtom([], true), new GroupAtom([], true)],
+    ])
   );
+
+  Builder.deleteRow(mat, 0);
+  expect(mat).toEqual(
+    new MatrixAtom([
+      [new GroupAtom([], true), new GroupAtom([], true)],
+      [group, group],
+      [group, group],
+      [new GroupAtom([], true), new GroupAtom([], true)],
+    ])
+  );
+  const mat2 = new MatrixAtom([
+    [group, group],
+    [targetGroup, group],
+  ]);
   Builder.addColumn(mat2, 2);
   expect(mat2).toEqual(
-    new MatrixAtom(
-      [
-        [group, group, new GroupAtom([], true)],
-        [targetGroup, group, new GroupAtom([], true)],
-      ],
-      "pmatrix"
-    )
+    new MatrixAtom([
+      [group, group, new GroupAtom([], true)],
+      [targetGroup, group, new GroupAtom([], true)],
+    ])
+  );
+  Builder.deleteCol(mat2, 2);
+  expect(mat2).toEqual(
+    new MatrixAtom([
+      [group, group],
+      [group, group],
+    ])
   );
 });
