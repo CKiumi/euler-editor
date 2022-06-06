@@ -1,6 +1,7 @@
 import "euler-tex/css/eulertex.css";
 import "euler-tex/css/font.css";
 import {
+  Atom,
   GroupAtom,
   latexToEditableAtom,
   loadFont,
@@ -72,6 +73,7 @@ export class EulerEditor extends HTMLElement {
     });
     this.lines = [new GroupAtom([])];
   }
+
   connectedCallback(): void {
     loadFont("/node_modules/euler-tex/woff");
     this.setAttribute("tabindex", "0");
@@ -154,6 +156,13 @@ export class EulerEditor extends HTMLElement {
   }
 
   renderLine = () => {
+    let parent: Atom | null = this.caret.target;
+    //find current lineIndex
+    while (parent.parent !== null) {
+      parent = parent.parent;
+    }
+    this.blur();
+    this.lineIndex = this.lines.indexOf(parent as GroupAtom);
     const prev = this.lines[this.lineIndex].elem;
     const elem = this.lines[this.lineIndex].toBox().toHtml();
     elem.classList.add("line");
@@ -307,6 +316,7 @@ export class EulerEditor extends HTMLElement {
     const { elem } = this.lines[this.lineIndex];
     elem && elem.classList.add("focus");
   };
+
   blur = () => {
     const { elem } = this.lines[this.lineIndex];
     elem && elem.classList.remove("focus");

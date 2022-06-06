@@ -182,6 +182,7 @@ export module Builder {
     }
     mat.children.splice(pos, 1);
   };
+
   export const deleteCol = (mat: MatrixAtom, pos: number) => {
     const length = Math.max(...mat.children.map((row) => row.length));
     if (length === 1) return;

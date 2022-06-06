@@ -461,8 +461,8 @@ export class Caret {
   }
 
   set = (atom: GroupAtom, pos: number, render?: boolean) => {
-    if (render) this.action.render();
     [this.target, this.pos] = [atom, pos];
+    if (render) this.action.render();
     this.renderCaret();
   };
 
