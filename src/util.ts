@@ -10,7 +10,7 @@ import {
   SupSubAtom,
   SymAtom,
 } from "euler-tex/src/lib";
-import { LETTER1, LETTER2 } from "euler-tex/src/parser/command";
+import { ACC, LETTER1, LETTER2, OP } from "euler-tex/src/parser/command";
 
 export module Util {
   export const children = (atom: Atom): Atom[] => {
@@ -98,6 +98,8 @@ export module Util {
       if (result) return result;
       result = Object.keys(LETTER2).find((key) => LETTER2[key] === atom.char);
       if (result) return result;
+      result = Object.keys(OP).find((key) => OP[key] === atom.char);
+      if (result) return result;
       return atom.char;
     }
     if (atom instanceof SqrtAtom) {
@@ -112,12 +114,10 @@ export module Util {
       return `\\overline{${serializeGroupAtom(atom.body.body)}}`;
     }
     if (atom instanceof AccentAtom) {
-      if (atom.accent.char === "^") {
-        return `\\hat{${serializeGroupAtom(atom.body.body)}}`;
-      }
-      if (atom.accent.char === "~") {
-        return `\\tilde{${serializeGroupAtom(atom.body.body)}}`;
-      }
+      const command = Object.keys(ACC).find(
+        (key) => ACC[key] === atom.accent.char
+      );
+      return `${command}{${serializeGroupAtom(atom.body.body)}}`;
     }
     if (atom instanceof LRAtom) {
       return `\\left(${serializeGroupAtom(atom.body.body)} \\right)`;

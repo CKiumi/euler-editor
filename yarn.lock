@@ -741,9 +741,9 @@ euler-engine@./pkg/euler-engine-v0.0.2.tgz:
   version "0.0.2"
   resolved "./pkg/euler-engine-v0.0.2.tgz#8a05cba9bf73fdd683ea875f437765cf6f331fec"
 
-euler-tex@./pkg/euler-tex-v0.2.2.tgz:
-  version "0.2.2"
-  resolved "./pkg/euler-tex-v0.2.2.tgz#f86cfa11067810b32d9713806954eb4681933ec2"
+euler-tex@./pkg/euler-tex-v0.2.3.tgz:
+  version "0.2.3"
+  resolved "./pkg/euler-tex-v0.2.3.tgz#8bb1079c7cfb5061677e0e98b47ca0d049aa868f"
 
 fast-deep-equal@^3.1.1, fast-deep-equal@^3.1.3:
   version "3.1.3"
