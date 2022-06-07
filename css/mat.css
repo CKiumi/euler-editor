@@ -1,43 +1,4 @@
-.mat-builder {
-  z-index: 10;
-  position: fixed;
-  top: -25px;
-  left: -60px;
-}
-
-.mat-builder > div {
-  position: absolute;
-  width: 120px;
-  height: 25px;
-  background: rgb(37, 37, 38);
-  color: #cccccc;
-  border-radius: 3px;
-  font-size: 12px;
-  display: flex;
-  justify-content: center;
-  line-height: 25px;
-}
-
-.mat-builder > div.focus {
-  background: rgba(2, 111, 207);
-}
-
-.mat-builder > div:first-child {
-  left: -100px;
-}
-
-.mat-builder > div:nth-child(2) {
-  top: -30px;
-}
-
-.mat-builder > div:nth-child(3) {
-  left: 100px;
-}
-
-.mat-builder > div:nth-child(4) {
-  top: 30px;
-}
-
+.mat-builder,
 .mat-destructor {
   z-index: 10;
   position: fixed;
@@ -45,17 +6,39 @@
   left: -60px;
 }
 
+.mat-builder > div,
 .mat-destructor > div {
   position: absolute;
-  width: 100px;
-  height: 25px;
+  width: 80px;
+  height: 20px;
   background: rgb(37, 37, 38);
   color: #cccccc;
   border-radius: 3px;
-  font-size: 12px;
+  font-size: 9px;
   display: flex;
   justify-content: center;
-  line-height: 25px;
+  line-height: 20px;
+}
+
+.mat-builder > div.focus {
+  background: rgba(2, 111, 207);
+}
+
+.mat-builder > div:first-child,
+.mat-destructor > div:first-child {
+  left: -80px;
+}
+
+.mat-builder > div:nth-child(2) {
+  top: -30px;
+}
+
+.mat-builder > div:nth-child(3) {
+  left: 80px;
+}
+
+.mat-builder > div:nth-child(4) {
+  top: 30px;
 }
 
 .mat-destructor > div.focus {

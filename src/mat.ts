@@ -11,10 +11,10 @@ export class MatBuilderView {
   pos = 0;
   constructor() {
     this.elem.className = "mat-builder";
-    this.bottom.innerText = "Add Row below";
-    this.top.innerText = "Add Row Above";
-    this.right.innerText = "Add Column Right";
-    this.left.innerText = "Add Column Left";
+    this.bottom.innerText = "Row below";
+    this.top.innerText = "Row Above";
+    this.right.innerText = "Column Right";
+    this.left.innerText = "Column Left";
     this.elem.style.visibility = "hidden";
     this.elem.append(this.left, this.top, this.right, this.bottom);
     this.elem.addEventListener("pointerdown", (ev) => ev.stopPropagation());

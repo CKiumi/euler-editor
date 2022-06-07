@@ -30,7 +30,12 @@ export module Suggestion {
     atoms.forEach((atom) => buffer.push(atom));
     const text = buffer.map((atom) => Util.serialize(atom)).join("");
     const list = candidates
-      .filter(([c]) => c.startsWith("\\" + text) || c.startsWith(text))
+      .filter(([c1]) => distance(c1.replace("\\", ""), text) > 0)
+      .sort(
+        ([c1], [c2]) =>
+          distance(c2.replace("\\", ""), text) -
+          distance(c1.replace("\\", ""), text)
+      )
       .map(([suggested, preview]) => {
         return {
           text: suggested,
@@ -44,5 +49,14 @@ export module Suggestion {
       });
     if (list.length === 0) reset();
     view.setList(list);
+  };
+
+  export const distance = (s: string, input: string) => {
+    if (s === input) return 3;
+    if (s.startsWith(input)) return 2;
+    if (s.includes(input)) {
+      return 1 - s.indexOf(input) / 100;
+    }
+    return 0;
   };
 }
