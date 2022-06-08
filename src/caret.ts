@@ -8,6 +8,7 @@ import {
   SupSubAtom,
 } from "euler-tex/src/lib";
 import { setRecord } from "./record";
+import { EngineSuggestion } from "./suggest/suggest";
 import { Util } from "./util";
 
 export type Sel = [anchor: number, offset: number];
@@ -63,12 +64,19 @@ export class Caret {
   setSel = (sel: [anchlor: number, offset: number] | null) => {
     this.selElem.style.width = "0px";
     this.sel = sel;
+    if (sel === null) {
+      EngineSuggestion.reset();
+    }
     sel === null ? this.action.focus() : this.action.blur();
     if (this.sel === null) return;
     const [start, last] = this.range().map((i) => this.target?.body[i]);
     const [relX, relY] = this.toReltiveCoord([
       Util.right(start),
       Util.top(this.target),
+    ]);
+    EngineSuggestion.set(this.getValue(), [
+      Util.right(start),
+      Util.top(this.target) + Util.height(this.target),
     ]);
     this.selElem.style.height = `${Util.height(this.target)}px`;
     this.selElem.style.transform = `translate(${relX}px,${relY}px)`;
@@ -79,7 +87,7 @@ export class Caret {
     this.target = atoms;
   }
 
-  insert(atoms: Atom[]) {
+  insert = (atoms: Atom[]) => {
     if (this.sel !== null) return this.replaceRange(atoms, this.range());
     this.target.body.splice(this.pos + 1, 0, ...atoms);
     this.action.render();
@@ -90,7 +98,7 @@ export class Caret {
       position: this.pos - 1,
       atoms,
     });
-  }
+  };
 
   copy(ev: ClipboardEvent) {
     const latex = this.getValue();
@@ -328,7 +336,7 @@ export class Caret {
         skip: true,
       });
       this.action.render();
-      this.set(this.target, range[0] + 1);
+      this.set(this.target, range[0] + newAtoms.length);
     } else {
       this.action.render();
       this.set(this.target, range[0]);

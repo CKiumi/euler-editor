@@ -20,6 +20,14 @@
   line-height: 20px;
 }
 
+.mat-builder > div {
+  border: solid 1px rgb(165, 165, 165);
+}
+
+.mat-destructor > div {
+  background: solid 1px darkred;
+}
+
 .mat-builder > div.focus {
   background: rgba(2, 111, 207);
 }

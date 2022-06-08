@@ -1,6 +1,6 @@
 import { MatBuilderView } from "./src/mat";
 import init from "euler-engine";
-import { latexToHtml } from "euler-tex/src/lib";
+import { latexToHtml, loadFont } from "euler-tex/src/lib";
 import EulerEditor from "./src/note";
 import { SuggestView } from "./src/suggest/view";
 
@@ -8,6 +8,7 @@ init().then(() => {
   console.log("Wasm initialized!!");
 });
 
+loadFont("/node_modules/euler-tex/woff");
 const main = document.getElementById("main");
 [1].forEach(() => {
   main.innerHTML += `

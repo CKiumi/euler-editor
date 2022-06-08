@@ -1,8 +1,14 @@
 import { SuggestView } from "./view";
-import { Atom, GroupAtom, latexToHtml, parse } from "euler-tex/src/lib";
+import {
+  Atom,
+  GroupAtom,
+  latexToEditableAtom,
+  latexToHtml,
+  parse,
+} from "euler-tex/src/lib";
 import { Util } from "../util";
 import { LETTER1, LETTER2 } from "euler-tex/src/parser/command";
-
+import { collect } from "euler-engine";
 const BLOCK: [string, string][] = [
   ["\\sum", "\\sum^x_x"],
   ["\\int", "\\int^x_x"],
@@ -58,5 +64,44 @@ export module Suggestion {
       return 1 - s.indexOf(input) / 100;
     }
     return 0;
+  };
+}
+
+export module EngineSuggestion {
+  export const view = new SuggestView();
+  export let insert: (atoms: Atom[]) => void;
+  const candidates: string[] = ["collect"];
+
+  export const reset = () => {
+    view.close();
+  };
+
+  export const set = (input: string, position: [left: number, top: number]) => {
+    view.open(position[0], position[1]);
+    const list = candidates
+      .map((cand) => {
+        try {
+          const result = collect(input);
+          return result === input ? [cand, false] : [cand, collect(input)];
+        } catch (error) {
+          return [cand, false];
+        }
+      })
+      .filter(([, result]) => result !== false)
+      .map(([suggested, result]) => {
+        return {
+          text: suggested,
+          preview: document.createElement("span"),
+          onClick: () => {
+            try {
+              insert(latexToEditableAtom(result as string).body.slice(1));
+            } catch (error) {
+              console.log("ENGINE ERROR");
+            }
+          },
+        };
+      });
+    if (list.length === 0) reset();
+    view.setList(list);
   };
 }

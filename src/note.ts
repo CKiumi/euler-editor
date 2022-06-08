@@ -4,7 +4,6 @@ import {
   Atom,
   GroupAtom,
   latexToEditableAtom,
-  loadFont,
   MatrixAtom,
   parse,
   SymAtom,
@@ -12,7 +11,7 @@ import {
 import { Caret } from "./caret";
 import { MatrixBuilder, MatrixDestructor } from "./mat";
 import { redo, undo } from "./record";
-import { Suggestion } from "./suggest/suggest";
+import { EngineSuggestion, Suggestion } from "./suggest/suggest";
 import { Builder, Util } from "./util";
 export class EulerEditor extends HTMLElement {
   textarea: HTMLTextAreaElement;
@@ -33,6 +32,7 @@ export class EulerEditor extends HTMLElement {
     this.field.insertAdjacentElement("beforeend", Suggestion.view.elem);
     this.field.insertAdjacentElement("beforeend", MatrixBuilder.view.elem);
     this.field.insertAdjacentElement("beforeend", MatrixDestructor.view.elem);
+    this.field.insertAdjacentElement("beforeend", EngineSuggestion.view.elem);
 
     this.addEventListener("focus", () => {
       this.textarea.focus({ preventScroll: true });
@@ -59,6 +59,7 @@ export class EulerEditor extends HTMLElement {
     );
 
     Suggestion.replaceRange = this.caret.replaceRange;
+    EngineSuggestion.insert = this.caret.insert;
     this.addEventListener("focus", () => this.textarea.focus());
     this.textarea.addEventListener("input", (ev) =>
       this.input(ev as InputEvent)
@@ -75,7 +76,6 @@ export class EulerEditor extends HTMLElement {
   }
 
   connectedCallback(): void {
-    loadFont("/node_modules/euler-tex/woff");
     this.setAttribute("tabindex", "0");
     this.insertAdjacentElement("afterbegin", this.textarea);
     this.insertAdjacentElement("beforeend", this.field);
@@ -171,8 +171,13 @@ export class EulerEditor extends HTMLElement {
   };
 
   onKeyDown(ev: KeyboardEvent) {
+    if (ev.code == "Enter" && EngineSuggestion.view.isOpen()) {
+      EngineSuggestion.view.select();
+      return;
+    }
     if (ev.code == "Enter" && Suggestion.buffer.length > 0) {
       Suggestion.view.select();
+
       return;
     }
     if (ev.code == "Enter") {
