@@ -1,7 +1,7 @@
 {
   "name": "euler-editor",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "scripts": {
     "dev": "vite",
     "test": "vitest",
@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "euler-tex": "./pkg/euler-tex-v0.2.3.tgz",
-    "euler-engine": "./pkg/euler-engine-v0.0.4.tgz"
+    "euler-engine": "./pkg/euler-engine-v0.0.5.tgz"
   },
   "devDependencies": {
     "@playwright/test": "^1.21.1",

@@ -90,7 +90,7 @@ export module EngineSuggestion {
       .filter(([, result]) => result !== false)
       .map(([suggested, result]) => {
         return {
-          text: suggested,
+          text: suggested as string,
           preview: document.createElement("span"),
           onClick: () => {
             try {
