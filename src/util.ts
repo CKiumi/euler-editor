@@ -1,3 +1,4 @@
+import { OpAtom } from "euler-tex/src/atom/op";
 import {
   AccentAtom,
   Atom,
@@ -10,7 +11,13 @@ import {
   SupSubAtom,
   SymAtom,
 } from "euler-tex/src/lib";
-import { ACC, LETTER1, LETTER2, OP } from "euler-tex/src/parser/command";
+import {
+  ACC,
+  BlockOp,
+  LETTER1,
+  LETTER2,
+  LETTER3,
+} from "euler-tex/src/parser/command";
 
 export module Util {
   export const children = (atom: Atom): Atom[] => {
@@ -94,13 +101,19 @@ export module Util {
   export const serialize = (atom: Atom): string => {
     if (atom instanceof SymAtom) {
       let result;
+      if (atom.char === "−") return "-";
       result = Object.keys(LETTER1).find((key) => LETTER1[key] === atom.char);
       if (result) return result;
       result = Object.keys(LETTER2).find((key) => LETTER2[key] === atom.char);
       if (result) return result;
-      result = Object.keys(OP).find((key) => OP[key] === atom.char);
+      result = Object.keys(LETTER3).find((key) => LETTER3[key] === atom.char);
+      if (result) return result;
+      result = Object.keys(BlockOp).find((key) => BlockOp[key] === atom.char);
       if (result) return result;
       return atom.char;
+    }
+    if (atom instanceof OpAtom) {
+      return "\\" + atom.body;
     }
     if (atom instanceof SqrtAtom) {
       return `\\sqrt{${serializeGroupAtom(atom.body.body)}}`;

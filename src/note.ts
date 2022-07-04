@@ -1,7 +1,9 @@
+import init from "euler-engine";
 import "euler-tex/css/eulertex.css";
 import "euler-tex/css/font.css";
 import {
   Atom,
+  FracAtom,
   GroupAtom,
   latexToEditableAtom,
   MatrixAtom,
@@ -76,6 +78,9 @@ export class EulerEditor extends HTMLElement {
   }
 
   connectedCallback(): void {
+    init().then(() => {
+      console.log("Wasm initialized!!");
+    });
     this.setAttribute("tabindex", "0");
     this.insertAdjacentElement("afterbegin", this.textarea);
     this.insertAdjacentElement("beforeend", this.field);
@@ -146,8 +151,12 @@ export class EulerEditor extends HTMLElement {
     if (/^[0-9|,]+/.test(ev.data)) {
       this.caret.insert(parse(ev.data, true));
     }
-    if (/^[+|-|=]+/.test(ev.data)) {
-      this.caret.insert([new SymAtom("bin", ev.data, "Main-R")]);
+
+    if (/^[+|=]+/.test(ev.data)) {
+      this.caret.insert([new SymAtom("bin", ev.data, ["Main-R"])]);
+    }
+    if (ev.data === "-") {
+      this.caret.insert([new SymAtom("bin", "−", ["Main-R"])]);
     }
     if (ev.data === "^") this.caret.addSup();
     if (ev.data === "_") this.caret.addSub();
@@ -177,7 +186,16 @@ export class EulerEditor extends HTMLElement {
     }
     if (ev.code == "Enter" && Suggestion.buffer.length > 0) {
       Suggestion.view.select();
-
+      const atom = this.caret.cur();
+      if (Util.isSingleBody(atom)) {
+        this.caret.moveLeft();
+      }
+      if (atom instanceof FracAtom) {
+        this.caret.moveLeft();
+      }
+      if (atom instanceof MatrixAtom) {
+        this.caret.set(atom.children[0][0], 0);
+      }
       return;
     }
     if (ev.code == "Enter") {

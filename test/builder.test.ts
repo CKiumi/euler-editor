@@ -14,12 +14,12 @@ import {
 import { Builder, Util } from "../src/util";
 
 test("children", () => {
-  const j = new SymAtom("ord", "j", "Math-I");
+  const j = new SymAtom("ord", "j", ["Math-I"]);
   const group = new GroupAtom([j], true);
   const f = new FirstAtom();
 
   expect(Util.children(j)).toStrictEqual([j]);
-  const accent = new SymAtom("ord", "^", "Main-R");
+  const accent = new SymAtom("ord", "^", ["Main-R"]);
   const accAtom = new AccentAtom(group, accent);
   expect(Util.children(accAtom)).toStrictEqual([f, j, accAtom]);
   const olAtom = new OverlineAtom(group);
@@ -43,10 +43,10 @@ test("children", () => {
 });
 
 test("serialize", () => {
-  const j = new SymAtom("ord", "j", "Math-I");
+  const j = new SymAtom("ord", "j", ["Math-I"]);
   const group = new GroupAtom([j], true);
   expect(Util.serialize(j)).toStrictEqual("j");
-  const accent = new SymAtom("ord", "^", "Main-R");
+  const accent = new SymAtom("ord", "^", ["Main-R"]);
   const accAtom = new AccentAtom(group, accent);
   expect(Util.serialize(accAtom)).toStrictEqual("\\hat{j}");
   const olAtom = new OverlineAtom(group);
@@ -73,7 +73,7 @@ test("serialize", () => {
 });
 
 test("matrix builder", () => {
-  const j = new SymAtom("ord", "j", "Math-I");
+  const j = new SymAtom("ord", "j", ["Math-I"]);
   const group = new GroupAtom([j], true);
   const targetGroup = new GroupAtom([j], true);
   const mat = new MatrixAtom(

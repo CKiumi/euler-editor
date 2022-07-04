@@ -1,17 +1,13 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { MatBuilderView } from "./src/mat";
-import init from "euler-engine";
 import { latexToHtml, loadFont } from "euler-tex/src/lib";
 import EulerEditor from "./src/note";
 import { SuggestView } from "./src/suggest/view";
 
-init().then(() => {
-  console.log("Wasm initialized!!");
-});
-
 loadFont("/node_modules/euler-tex/woff");
 const main = document.getElementById("main");
 [1].forEach(() => {
-  main.innerHTML += `
+  main!.innerHTML += `
   <button id="collect">Suggestion Test</button>
   <button id="mat-builder-test">MatrixBuilder Test</button>
   <euler-editor id="t"></euler-editor>
@@ -20,12 +16,12 @@ const main = document.getElementById("main");
 const eulerNote = document.getElementById("t") as EulerEditor;
 const collectBtn = document.getElementById("collect");
 const matBuilderBtn = document.getElementById("mat-builder-test");
-collectBtn.onclick = () => {
+collectBtn!.onclick = () => {
   // eulerNote.caret.insert(parse(collect(eulerNote.caret.getValue())));/
   testSuggest();
 };
 
-matBuilderBtn.onclick = () => {
+matBuilderBtn!.onclick = () => {
   testMatBuilder();
 };
 
@@ -56,7 +52,7 @@ const testSuggest = async () => {
   }));
   const main = document.getElementById("main");
   const autoCompletion = new SuggestView();
-  main.append(autoCompletion.elem);
+  main!.append(autoCompletion.elem);
   autoCompletion.open(70, 70);
   autoCompletion.setList([...blockList, ...symbolList]);
   await wait();
@@ -84,7 +80,7 @@ const testSuggest = async () => {
 const testMatBuilder = async () => {
   const main = document.getElementById("main");
   const matBilder = new MatBuilderView();
-  main.append(matBilder.elem);
+  main!.append(matBilder.elem);
   matBilder.open(400, 400);
   await wait();
   matBilder.select("top");

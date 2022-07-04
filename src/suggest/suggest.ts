@@ -7,21 +7,35 @@ import {
   parse,
 } from "euler-tex/src/lib";
 import { Util } from "../util";
-import { LETTER1, LETTER2 } from "euler-tex/src/parser/command";
+import { LETTER1, LETTER2, LETTER3, OP } from "euler-tex/src/parser/command";
 import { collect } from "euler-engine";
-const BLOCK: [string, string][] = [
-  ["\\sum", "\\sum^x_x"],
-  ["\\int", "\\int^x_x"],
-  ["\\pmatrix", "\\begin{pmatrix}x&x\\\\x&x\\end{pmatrix}"],
-  ["\\frac", "\\frac{a}{b}"],
-  ["\\sqrt", "\\sqrt{a}"],
+const BLOCK: [string, string, string][] = [
+  ["\\sum", "\\sum^n_{i=1}", "\\sum^n_{i=1}"],
+  ["\\int", "\\int^x_y", "\\int^x_y"],
+  [
+    "\\pmatrix",
+    "\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}",
+    "\\begin{pmatrix}&\\\\&\\end{pmatrix}",
+  ],
+  ["\\frac", "\\frac{a}{b}", "\\frac{}{}"],
+  ["\\sqrt", "\\sqrt{a}", "\\sqrt{}"],
+  ["\\overline", "\\overline{a}", "\\overline{}"],
+  ["\\tilde", "\\tilde{a}", "\\tilde{}"],
+  ["\\mathbb{C}", "\\mathbb{C}", "\\mathbb{C}"],
+  [
+    "\\array",
+    "\\begin{pmatrix}a\\\\b \\end{pmatrix}",
+    "\\begin{pmatrix}\\\\ \\end{pmatrix}",
+  ],
 ];
 export module Suggestion {
   export const view = new SuggestView();
   export let replaceRange: (newAtoms: Atom[], range: [number, number]) => void;
-  const candidates: [string, string][] = [
-    ...Object.keys(LETTER1).map((x) => [x, x] as [string, string]),
-    ...Object.keys(LETTER2).map((x) => [x, x] as [string, string]),
+  const candidates: [string, string, string][] = [
+    ...Object.keys(LETTER1).map((x) => [x, x, x] as [string, string, string]),
+    ...Object.keys(LETTER2).map((x) => [x, x, x] as [string, string, string]),
+    ...Object.keys(LETTER3).map((x) => [x, x, x] as [string, string, string]),
+    ...OP.map((x) => [x, x, x] as [string, string, string]),
     ...BLOCK,
   ];
   export const buffer: Atom[] = [];
@@ -42,14 +56,17 @@ export module Suggestion {
           distance(c2.replace("\\", ""), text) -
           distance(c1.replace("\\", ""), text)
       )
-      .map(([suggested, preview]) => {
+      .map(([suggested, preview, replaceStr]) => {
         return {
           text: suggested,
           preview: latexToHtml(preview),
           onClick: () => {
             const start =
               (buffer[0].parent as GroupAtom).body.indexOf(buffer[0]) - 1;
-            replaceRange(parse(preview, true), [start, start + buffer.length]);
+            replaceRange(parse(replaceStr, true), [
+              start,
+              start + buffer.length,
+            ]);
           },
         };
       });
