@@ -247,6 +247,10 @@ export class EulerEditor extends HTMLElement {
       else this.caret.moveLeft();
     }
     if (ev.code == "ArrowDown") {
+      if (EngineSuggestion.view.isOpen()) {
+        EngineSuggestion.view.down();
+        return;
+      }
       if (MatrixBuilder.view.isOpen()) {
         MatrixBuilder.view.select("bottom");
         return;
@@ -265,6 +269,10 @@ export class EulerEditor extends HTMLElement {
       }
     }
     if (ev.code == "ArrowUp") {
+      if (EngineSuggestion.view.isOpen()) {
+        EngineSuggestion.view.up();
+        return;
+      }
       if (MatrixBuilder.view.isOpen()) {
         MatrixBuilder.view.select("top");
         return;

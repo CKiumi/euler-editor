@@ -8,7 +8,7 @@ import {
 } from "euler-tex/src/lib";
 import { Util } from "../util";
 import { LETTER1, LETTER2, LETTER3, OP } from "euler-tex/src/parser/command";
-import { collect } from "euler-engine";
+import { collect, expand } from "euler-engine";
 const BLOCK: [string, string, string][] = [
   ["\\sum", "\\sum^n_{i=1}", "\\sum^n_{i=1}"],
   ["\\int", "\\int^x_y", "\\int^x_y"],
@@ -87,7 +87,10 @@ export module Suggestion {
 export module EngineSuggestion {
   export const view = new SuggestView();
   export let insert: (atoms: Atom[]) => void;
-  const candidates: string[] = ["collect"];
+  const candidates: [string, (x: string) => string][] = [
+    ["collect", collect],
+    ["expand", expand],
+  ];
 
   export const reset = () => {
     view.close();
@@ -96,12 +99,12 @@ export module EngineSuggestion {
   export const set = (input: string, position: [left: number, top: number]) => {
     view.open(position[0], position[1]);
     const list = candidates
-      .map((cand) => {
+      .map(([title, func]) => {
         try {
-          const result = collect(input);
-          return result === input ? [cand, false] : [cand, collect(input)];
+          const result = func(input);
+          return result === input ? [title, false] : [title, result];
         } catch (error) {
-          return [cand, false];
+          return [title, false];
         }
       })
       .filter(([, result]) => result !== false)
