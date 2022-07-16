@@ -10,6 +10,7 @@ import {
   parse,
   SymAtom,
 } from "euler-tex/src/lib";
+import { latexToBlocks } from "euler-tex/src/parser/textParser";
 import { Caret } from "./caret";
 import { MatrixBuilder, MatrixDestructor } from "./mat";
 import { redo, undo } from "./record";
@@ -89,17 +90,18 @@ export class EulerEditor extends HTMLElement {
     );
   }
 
-  set = (latex: string[]) => {
+  set = (latex: string) => {
     this.caret.elem.style.height = "0px";
     this.lines.forEach((elem) => {
       elem.elem?.remove();
     });
-    this.lines = latex.map((s) => {
-      const group = latexToEditableAtom(s);
+    this.lines = latexToBlocks(latex).map(({ mode, latex }) => {
+      if (mode === "text") throw new Error("");
+      const group = latexToEditableAtom(latex, mode);
       if (!group.elem) {
         throw new Error("latexToEditableAtom not working propery");
       }
-      group.elem.classList.add("line");
+      // group.elem.classList.add("line");
       return group;
     });
     this.lines.forEach(({ elem }) => {
@@ -111,6 +113,8 @@ export class EulerEditor extends HTMLElement {
     return this.lines.map((line) => Util.serializeGroupAtom(line.body));
   };
 
+  curLine = () => this.lines[this.lineIndex];
+
   newLine() {
     this.blur();
     const line = new GroupAtom([], true);
@@ -119,18 +123,15 @@ export class EulerEditor extends HTMLElement {
     this.lines.splice(this.lineIndex + 1, 0, line);
     ++this.lineIndex;
     this.lines[this.lineIndex - 1].elem?.after(elem);
-    this.caret.set(this.lines[this.lineIndex], 0);
+    this.caret.set(this.curLine(), 0);
     this.focus();
   }
 
   deleteLine() {
-    this.lines[this.lineIndex].elem?.remove();
+    this.curLine().elem?.remove();
     this.lines.splice(this.lineIndex, 1);
     --this.lineIndex;
-    this.caret.set(
-      this.lines[this.lineIndex],
-      this.lines[this.lineIndex].body.length - 1
-    );
+    this.caret.set(this.curLine(), this.curLine().body.length - 1);
     this.focus();
   }
 
@@ -172,9 +173,9 @@ export class EulerEditor extends HTMLElement {
     }
     this.blur();
     this.lineIndex = this.lines.indexOf(parent as GroupAtom);
-    const prev = this.lines[this.lineIndex].elem;
-    const elem = this.lines[this.lineIndex].toBox().toHtml();
-    elem.classList.add("line");
+    const prev = this.curLine().elem;
+    const elem = this.curLine().toBox().toHtml();
+    if (prev) elem.className = prev.className;
     this.focus();
     elem && prev?.replaceWith(elem);
   };
@@ -230,7 +231,13 @@ export class EulerEditor extends HTMLElement {
       if (Suggestion.view.isOpen()) Suggestion.reset();
       else if (ev.metaKey && ev.shiftKey) this.caret.selectRight();
       else if (ev.shiftKey) this.caret.shiftRight();
-      else this.caret.moveRight();
+      else if (
+        this.caret.target === this.curLine() &&
+        this.caret.pos === this.curLine().body.length - 1
+      ) {
+        this.caret.set(this.lines[this.lineIndex + 1], 0);
+        this.lineIndex += 1;
+      } else this.caret.moveRight();
     }
     if (ev.code == "ArrowLeft") {
       if (MatrixBuilder.view.isOpen()) {
@@ -241,10 +248,17 @@ export class EulerEditor extends HTMLElement {
         MatrixDestructor.view.select("left");
         return;
       }
+
       if (Suggestion.view.isOpen()) Suggestion.reset();
       else if (ev.metaKey && ev.shiftKey) this.caret.selectLeft();
       else if (ev.shiftKey) this.caret.shiftLeft();
-      else this.caret.moveLeft();
+      else if (this.caret.target === this.curLine() && this.caret.pos === 0) {
+        this.caret.set(
+          this.lines[this.lineIndex - 1],
+          this.lines[this.lineIndex - 1].body.length - 1
+        );
+        this.lineIndex -= 1;
+      } else this.caret.moveLeft();
     }
     if (ev.code == "ArrowDown") {
       if (EngineSuggestion.view.isOpen()) {
@@ -293,7 +307,7 @@ export class EulerEditor extends HTMLElement {
         : undo(this.caret.set, this.caret.setSel);
     }
     if (ev.code == "Backspace") {
-      if (this.lines[this.lineIndex].body.length === 1) {
+      if (this.curLine().body.length === 1) {
         if (this.lineIndex !== 0) {
           this.deleteLine();
         }
@@ -327,9 +341,9 @@ export class EulerEditor extends HTMLElement {
     this.lineIndex = newIndex;
     this.focus();
     if (y) {
-      this.caret.pointAtom(x, y, this.lines[this.lineIndex]);
+      this.caret.pointAtom(x, y, this.curLine());
     } else {
-      this.caret.pointAtomHol(x, this.lines[this.lineIndex]);
+      this.caret.pointAtomHol(x, this.curLine());
     }
   }
 
@@ -344,12 +358,12 @@ export class EulerEditor extends HTMLElement {
   }
 
   focus = () => {
-    const { elem } = this.lines[this.lineIndex];
+    const { elem } = this.curLine();
     elem && elem.classList.add("focus");
   };
 
   blur = () => {
-    const { elem } = this.lines[this.lineIndex];
+    const { elem } = this.curLine();
     elem && elem.classList.remove("focus");
   };
 }

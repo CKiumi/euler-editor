@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { MatBuilderView } from "./src/mat";
-import { latexToHtml, loadFont } from "euler-tex/src/lib";
+import { MathLatexToHtml, loadFont } from "euler-tex/src/lib";
 import EulerEditor from "./src/note";
 import { SuggestView } from "./src/suggest/view";
 
@@ -26,11 +26,10 @@ matBuilderBtn!.onclick = () => {
 };
 
 eulerNote.addEventListener("mount", () => {
-  eulerNote.set(["\\sqrt{xxx}\\hat{xx}", ""]);
-  eulerNote.set([
-    "\\sqrt{xxx}\\hat{xx}\\sum^x_x",
-    String.raw`\begin{pmatrix}a & b \\ c & d\end{pmatrix}`,
-  ]);
+  eulerNote.set("$\\sqrt{xxx}\\hat{xx}$");
+  eulerNote.set(
+    "$yy$$xx$\\[zz\\]$yy$\\begin{equation*}\\frac{x}{y}\\sqrt{xxx}\\hat{xx}bb\\end{equation*}"
+  );
 });
 const wait = () => new Promise((resolve) => setTimeout(resolve, 400));
 const testSuggest = async () => {
@@ -42,12 +41,12 @@ const testSuggest = async () => {
 
   const blockList = BLOCK.map(([text, prev]) => ({
     text,
-    preview: latexToHtml(prev),
+    preview: MathLatexToHtml(prev),
     onClick: () => console.log("clicked " + text),
   }));
   const symbolList = Symbol.map((text) => ({
     text,
-    preview: latexToHtml(text),
+    preview: MathLatexToHtml(text),
     onClick: () => console.log("clicked " + text),
   }));
   const main = document.getElementById("main");

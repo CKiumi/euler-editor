@@ -3,7 +3,7 @@ import {
   Atom,
   GroupAtom,
   latexToEditableAtom,
-  latexToHtml,
+  MathLatexToHtml,
   parse,
 } from "euler-tex/src/lib";
 import { Util } from "../util";
@@ -59,7 +59,7 @@ export module Suggestion {
       .map(([suggested, preview, replaceStr]) => {
         return {
           text: suggested,
-          preview: latexToHtml(preview),
+          preview: MathLatexToHtml(preview),
           onClick: () => {
             const start =
               (buffer[0].parent as GroupAtom).body.indexOf(buffer[0]) - 1;
@@ -114,7 +114,9 @@ export module EngineSuggestion {
           preview: document.createElement("span"),
           onClick: () => {
             try {
-              insert(latexToEditableAtom(result as string).body.slice(1));
+              insert(
+                latexToEditableAtom(result as string, "inline").body.slice(1)
+              );
             } catch (error) {
               console.log("ENGINE ERROR");
             }

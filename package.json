@@ -1,7 +1,7 @@
 {
   "name": "euler-editor",
   "private": true,
-  "version": "0.2.6",
+  "version": "0.2.5",
   "scripts": {
     "dev": "vite",
     "test": "vitest",
@@ -16,7 +16,7 @@
     "pub": "yarn pack && mv euler-editor*.tgz ../euler-note/pkg"
   },
   "dependencies": {
-    "euler-tex": "./pkg/euler-tex-v0.3.0.tgz",
+    "euler-tex": "./pkg/euler-tex-v0.2.5.tgz",
     "euler-engine": "./pkg/euler-engine-v0.0.6.tgz"
   },
   "devDependencies": {
