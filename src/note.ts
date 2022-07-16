@@ -96,7 +96,14 @@ export class EulerEditor extends HTMLElement {
       elem.elem?.remove();
     });
     this.lines = latexToBlocks(latex).map(({ mode, latex }) => {
-      if (mode === "text") throw new Error("");
+      if (mode === "text") {
+        const atom = new GroupAtom(
+          latex.split("").map((char) => new SymAtom("ord", char, ["Main-R"])),
+          true
+        );
+        atom.toBox().toHtml();
+        return atom;
+      }
       const group = latexToEditableAtom(latex, mode);
       if (!group.elem) {
         throw new Error("latexToEditableAtom not working propery");
