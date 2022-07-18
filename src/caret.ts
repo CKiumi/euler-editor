@@ -39,7 +39,7 @@ export class Caret {
     if (!elem) throw new Error("Element not found in current pointed atom");
     const rect = elem.getBoundingClientRect();
     if (!elem.parentElement) throw new Error("Parent element not found");
-    const parentRect = elem.parentElement.getBoundingClientRect();
+    const parentRect = Util.getLineRect(elem, elem.parentElement);
     const [x, y] = this.toReltiveCoord([rect.x + rect.width, parentRect.y]);
     if (parentRect.height) {
       this.elem.style.cssText = `height:${parentRect.height}px; 
@@ -404,24 +404,34 @@ export class Caret {
       return;
     }
     this.setSel(null);
-    let i = 1;
-    while (i < atoms.length && Util.right(atoms[i]) < x) {
-      i++;
-    }
+    let i = 0;
+    let prevDistance = Infinity;
+    group.body.forEach((atom, index) => {
+      const newDistance = distance(
+        [Util.right(atom), Util.yCenter(atom)],
+        [x, y]
+      );
+      if (newDistance < prevDistance) {
+        prevDistance = newDistance;
+        i = index + 1;
+      }
+    });
+
     const atom = (() => {
       if (i === atoms.length) {
         return atoms[i - 1];
       } else {
-        return [atoms[i - 1], ...Util.children(atoms[i])].reduce(
-          (prev, cur) => {
-            if (
-              distance([Util.right(cur), Util.yCenter(cur)], [x, y]) <=
-              distance([Util.right(prev), Util.yCenter(prev)], [x, y])
-            ) {
-              return cur;
-            } else return prev;
-          }
-        );
+        return [
+          ...Util.children(atoms[i - 1]),
+          ...Util.children(atoms[i]),
+        ].reduce((prev, cur) => {
+          if (
+            distance([Util.right(cur), Util.yCenter(cur)], [x, y]) <=
+            distance([Util.right(prev), Util.yCenter(prev)], [x, y])
+          ) {
+            return cur;
+          } else return prev;
+        });
       }
     })();
     const parent = atom.parent as GroupAtom;

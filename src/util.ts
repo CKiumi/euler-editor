@@ -62,6 +62,13 @@ export module Util {
     return atom.elem.getBoundingClientRect().right;
   };
 
+  export const left = (atom: Atom): number => {
+    if (!atom.elem) {
+      throw new Error("Try to get rect of atom with no element linked");
+    }
+    return atom.elem.getBoundingClientRect().left;
+  };
+
   export const top = (atom: Atom): number => {
     if (!atom.elem) {
       throw new Error("Try to get rect of atom with no element linked");
@@ -89,6 +96,45 @@ export module Util {
     }
     const { top, bottom } = atom.elem.getBoundingClientRect();
     return top + (bottom - top) / 2;
+  };
+
+  export const parseText = (latex: string) => {
+    const atom = new GroupAtom(
+      latex
+        .split("")
+        .map(
+          (char) =>
+            new SymAtom("ord", char === " " ? "&nbsp;" : char, ["Main-R"])
+        ),
+      true
+    );
+    const html = atom.toBox().toHtml();
+    html.className = "text";
+    return atom;
+  };
+
+  export const isInBlock = ([x, y]: [number, number], block: HTMLElement) => {
+    const rects = Array.from(block.getClientRects());
+    for (const rect of rects) {
+      if (x > rect.left && x < rect.right && y > rect.top && y < rect.bottom) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  export const getLineRect = (target: HTMLElement, block: HTMLElement) => {
+    const rects = Array.from(block.getClientRects());
+    const y =
+      target.getBoundingClientRect().y +
+      target.getBoundingClientRect().height / 2;
+    for (const rect of rects) {
+      if (y > rect.top && y < rect.bottom) {
+        return rect;
+      }
+    }
+    console.log(rects);
+    throw new Error("target html is not in block");
   };
 
   export const serializeGroupAtom = (atoms: Atom[]): string => {

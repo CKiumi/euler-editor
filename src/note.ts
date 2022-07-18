@@ -67,7 +67,7 @@ export class EulerEditor extends HTMLElement {
     this.textarea.addEventListener("input", (ev) =>
       this.input(ev as InputEvent)
     );
-    this.addEventListener("pointerdown", (ev) => this.onPointerDown(ev));
+    this.field.addEventListener("pointerdown", (ev) => this.onPointerDown(ev));
     this.textarea.addEventListener("keydown", (ev) => this.onKeyDown(ev));
     this.textarea.addEventListener("cut", (ev) => this.caret.cut(ev));
     this.textarea.addEventListener("copy", (ev) => this.caret.copy(ev));
@@ -95,20 +95,30 @@ export class EulerEditor extends HTMLElement {
     this.lines.forEach((elem) => {
       elem.elem?.remove();
     });
-    this.lines = latexToBlocks(latex).map(({ mode, latex }) => {
+    this.lines = [];
+    latexToBlocks(latex).forEach(({ mode, latex }) => {
       if (mode === "text") {
-        const atom = new GroupAtom(
-          latex.split("").map((char) => new SymAtom("ord", char, ["Main-R"])),
-          true
-        );
-        atom.toBox().toHtml();
-        return atom;
+        this.lines.push(Util.parseText(latex));
+        return;
       }
       const group = latexToEditableAtom(latex, mode);
       if (!group.elem) {
         throw new Error("latexToEditableAtom not working propery");
       }
-      // group.elem.classList.add("line");
+      const isInline =
+        this.lines.length !== 0 &&
+        this.lines[this.lines.length - 1].elem?.classList.contains("inline");
+      const isDisplay =
+        this.lines.length !== 0 &&
+        this.lines[this.lines.length - 1].elem?.classList.contains("display");
+      if (
+        (isInline && mode === "display") ||
+        (isDisplay && mode === "inline")
+      ) {
+        this.lines.push(Util.parseText(""));
+      }
+
+      this.lines.push(group);
       return group;
     });
     this.lines.forEach(({ elem }) => {
@@ -147,7 +157,13 @@ export class EulerEditor extends HTMLElement {
       Suggestion.reset();
       return;
     }
-
+    if (this.curLine().elem?.classList.contains("text")) {
+      const atom = new SymAtom("ord", ev.data === " " ? "&nbsp;" : ev.data, [
+        "Main-R",
+      ]);
+      this.caret.insert([atom]);
+      return;
+    }
     if (/^[a-zA-Z*]+/.test(ev.data)) {
       const atoms = parse(ev.data, true);
       this.caret.insert(atoms);
@@ -240,7 +256,8 @@ export class EulerEditor extends HTMLElement {
       else if (ev.shiftKey) this.caret.shiftRight();
       else if (
         this.caret.target === this.curLine() &&
-        this.caret.pos === this.curLine().body.length - 1
+        this.caret.pos === this.curLine().body.length - 1 &&
+        this.lineIndex != this.lines.length - 1
       ) {
         this.caret.set(this.lines[this.lineIndex + 1], 0);
         this.lineIndex += 1;
@@ -259,7 +276,11 @@ export class EulerEditor extends HTMLElement {
       if (Suggestion.view.isOpen()) Suggestion.reset();
       else if (ev.metaKey && ev.shiftKey) this.caret.selectLeft();
       else if (ev.shiftKey) this.caret.shiftLeft();
-      else if (this.caret.target === this.curLine() && this.caret.pos === 0) {
+      else if (
+        this.caret.target === this.curLine() &&
+        this.caret.pos === 0 &&
+        this.lineIndex != 0
+      ) {
         this.caret.set(
           this.lines[this.lineIndex - 1],
           this.lines[this.lineIndex - 1].body.length - 1
@@ -286,7 +307,9 @@ export class EulerEditor extends HTMLElement {
         !this.caret.moveDown() &&
         this.lineIndex !== this.lines.length - 1
       ) {
-        this.setLine(this.lineIndex + 1, this.caret.x(), null);
+        this.pointAtom([this.caret.x(), Util.bottom(this.caret.cur()) + 10]);
+        this.caret.setSel(null);
+        return;
       }
     }
     if (ev.code == "ArrowUp") {
@@ -305,7 +328,9 @@ export class EulerEditor extends HTMLElement {
       this.caret.setSel(null);
       if (Suggestion.view.isOpen()) Suggestion.view.up();
       else if (!this.caret.moveUp() && this.lineIndex !== 0) {
-        this.setLine(this.lineIndex - 1, this.caret.x(), null);
+        this.pointAtom([this.caret.x(), Util.top(this.caret.cur()) - 20]);
+        this.caret.setSel(null);
+        return;
       }
     }
     if (ev.metaKey && ev.code == "KeyZ") {
@@ -357,8 +382,12 @@ export class EulerEditor extends HTMLElement {
   pointAtom(c: [number, number]) {
     this.caret.setSel(null);
     for (const [index, line] of this.lines.entries()) {
-      if (c[1] < Util.bottom(line)) {
+      if (!line.elem) throw new Error("Expect elem");
+      if (Util.isInBlock([c[0], c[1]], line.elem)) {
         return this.setLine(index, c[0], c[1]);
+      }
+      if (line.elem.classList.contains("display") && c[1] < Util.top(line)) {
+        return this.setLine(index - 1, c[0], c[1]);
       }
     }
     return this.setLine(this.lines.length - 1, c[0], c[1]);

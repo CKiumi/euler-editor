@@ -75,7 +75,7 @@ button:hover {
   background-color: rgb(17, 82, 147);
 }
 
-.line {
+/* .line {
   position: relative;
   min-height: 30px;
   line-height: unset !important;
@@ -84,12 +84,15 @@ button:hover {
   display: flex;
   align-items: center;
   white-space: nowrap;
+} */
+
+.display,
+.inline,
+.text {
+  /* Without position relative, the selection overlay won't work as expected */
+  position: relative;
 }
 
 .focus {
   background-color: rgba(186, 217, 230, 0.4);
-}
-
-[contentEditable] {
-  outline: none;
 }
