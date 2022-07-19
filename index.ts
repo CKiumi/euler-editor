@@ -28,7 +28,8 @@ matBuilderBtn!.onclick = () => {
 eulerNote.addEventListener("mount", () => {
   eulerNote.set("$\\sqrt{xxx}\\hat{xx}$");
   eulerNote.set(
-    "The equation $yy$ below $xx$ The equation $yy$ below $xx$ The equation $yy$ below $xx$\\[zz\\]$yy$\\begin{equation*}\\frac{x}{y}\\sqrt{xxx}\\hat{xx}bb\\end{equation*}"
+    `The equation $yy$ below $xx$ T
+he equation $yy$ below $xx$ The equation $yy$ below $xx$\\[zz\\]$yy$\\begin{equation*}\\frac{x}{y}\\sqrt{xxx}\\hat{xx}bb\\end{equation*}`
   );
 });
 const wait = () => new Promise((resolve) => setTimeout(resolve, 400));

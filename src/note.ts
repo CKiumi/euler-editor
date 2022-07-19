@@ -11,6 +11,7 @@ import {
   SymAtom,
 } from "euler-tex/src/lib";
 import { latexToBlocks } from "euler-tex/src/parser/textParser";
+import { CharAtom, latexToInlineAtom } from "./atom";
 import { Caret } from "./caret";
 import { MatrixBuilder, MatrixDestructor } from "./mat";
 import { redo, undo } from "./record";
@@ -67,7 +68,7 @@ export class EulerEditor extends HTMLElement {
     this.textarea.addEventListener("input", (ev) =>
       this.input(ev as InputEvent)
     );
-    this.field.addEventListener("pointerdown", (ev) => this.onPointerDown(ev));
+    this.addEventListener("pointerdown", (ev) => this.onPointerDown(ev));
     this.textarea.addEventListener("keydown", (ev) => this.onKeyDown(ev));
     this.textarea.addEventListener("cut", (ev) => this.caret.cut(ev));
     this.textarea.addEventListener("copy", (ev) => this.caret.copy(ev));
@@ -96,31 +97,27 @@ export class EulerEditor extends HTMLElement {
       elem.elem?.remove();
     });
     this.lines = [];
+    let texts: Atom[] = [];
     latexToBlocks(latex).forEach(({ mode, latex }) => {
       if (mode === "text") {
-        this.lines.push(Util.parseText(latex));
+        const atoms = latex
+          .split("")
+          .map((char) => new CharAtom(char === " " ? "&nbsp;" : char));
+        texts.push(...atoms);
         return;
       }
+      if (mode === "inline") {
+        texts.push(latexToInlineAtom(latex));
+        return;
+      }
+      this.lines.push(Util.parseText(texts));
+      texts = [];
       const group = latexToEditableAtom(latex, mode);
-      if (!group.elem) {
-        throw new Error("latexToEditableAtom not working propery");
-      }
-      const isInline =
-        this.lines.length !== 0 &&
-        this.lines[this.lines.length - 1].elem?.classList.contains("inline");
-      const isDisplay =
-        this.lines.length !== 0 &&
-        this.lines[this.lines.length - 1].elem?.classList.contains("display");
-      if (
-        (isInline && mode === "display") ||
-        (isDisplay && mode === "inline")
-      ) {
-        this.lines.push(Util.parseText(""));
-      }
-
       this.lines.push(group);
-      return group;
     });
+    if (texts.length != 0) {
+      this.lines.push(Util.parseText(texts));
+    }
     this.lines.forEach(({ elem }) => {
       elem && this.field.insertAdjacentElement("beforeend", elem);
     });
@@ -157,7 +154,7 @@ export class EulerEditor extends HTMLElement {
       Suggestion.reset();
       return;
     }
-    if (this.curLine().elem?.classList.contains("text")) {
+    if (this.caret.target.elem?.classList.contains("text")) {
       const atom = new SymAtom("ord", ev.data === " " ? "&nbsp;" : ev.data, [
         "Main-R",
       ]);
@@ -327,8 +324,16 @@ export class EulerEditor extends HTMLElement {
       }
       this.caret.setSel(null);
       if (Suggestion.view.isOpen()) Suggestion.view.up();
-      else if (!this.caret.moveUp() && this.lineIndex !== 0) {
-        this.pointAtom([this.caret.x(), Util.top(this.caret.cur()) - 20]);
+      else if (!this.caret.moveUp()) {
+        if (this.caret.target.elem?.classList.contains("display")) {
+          this.pointAtom([
+            this.caret.x(),
+            Util.bottom(this.lines[this.lineIndex - 1]) - 10,
+          ]);
+        } else {
+          this.pointAtom([this.caret.x(), Util.top(this.caret.cur()) - 20]);
+        }
+
         this.caret.setSel(null);
         return;
       }
@@ -371,36 +376,51 @@ export class EulerEditor extends HTMLElement {
   setLine(newIndex: number, x: number, y: number | null) {
     this.blur();
     this.lineIndex = newIndex;
-    this.focus();
     if (y) {
       this.caret.pointAtom(x, y, this.curLine());
     } else {
       this.caret.pointAtomHol(x, this.curLine());
     }
+    this.focus();
   }
 
   pointAtom(c: [number, number]) {
     this.caret.setSel(null);
     for (const [index, line] of this.lines.entries()) {
       if (!line.elem) throw new Error("Expect elem");
-      if (Util.isInBlock([c[0], c[1]], line.elem)) {
+      const { bottom } = line.elem.getBoundingClientRect();
+      if (bottom > c[1]) {
+        const rects = Array.from(line.elem.getClientRects());
+        for (const rect of rects) {
+          if (rect.right < c[0] && rect.bottom > c[1]) {
+            return this.setLine(index, rect.right, rect.top);
+          }
+        }
         return this.setLine(index, c[0], c[1]);
       }
-      if (line.elem.classList.contains("display") && c[1] < Util.top(line)) {
-        return this.setLine(index - 1, c[0], c[1]);
-      }
     }
-    return this.setLine(this.lines.length - 1, c[0], c[1]);
+
+    const lastBlock = this.lines[this.lines.length - 1];
+    return this.caret.set(lastBlock, lastBlock.body.length - 1);
   }
 
   focus = () => {
     const { elem } = this.curLine();
-    elem && elem.classList.add("focus");
+    if (!elem) throw new Error("");
+    if (elem && elem.classList.contains("display")) {
+      elem.classList.add("focus");
+      return;
+    }
+    if (this.caret.target.elem?.classList.contains("inline")) {
+      this.caret.target.elem?.classList.add("focus");
+    }
   };
 
   blur = () => {
-    const { elem } = this.curLine();
-    elem && elem.classList.remove("focus");
+    let elem = document.getElementsByClassName("inline focus");
+    elem[0] && elem[0].classList.remove("focus");
+    elem = document.getElementsByClassName("display focus");
+    elem[0] && elem[0].classList.remove("focus");
   };
 }
 

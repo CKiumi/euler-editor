@@ -18,10 +18,11 @@ import {
   LETTER2,
   LETTER3,
 } from "euler-tex/src/parser/command";
+import { InlineBlockAtom, TextBlockAtom } from "./atom";
 
 export module Util {
   export const children = (atom: Atom): Atom[] => {
-    if (atom instanceof GroupAtom) {
+    if (atom instanceof GroupAtom || atom instanceof InlineBlockAtom) {
       return atom.body.flatMap((atom) => children(atom));
     } else if (atom instanceof SupSubAtom) {
       const nucs = children(atom.nuc);
@@ -98,29 +99,15 @@ export module Util {
     return top + (bottom - top) / 2;
   };
 
-  export const parseText = (latex: string) => {
-    const atom = new GroupAtom(
-      latex
-        .split("")
-        .map(
-          (char) =>
-            new SymAtom("ord", char === " " ? "&nbsp;" : char, ["Main-R"])
-        ),
-      true
-    );
-    const html = atom.toBox().toHtml();
-    html.className = "text";
+  export const parseText = (atoms: Atom[]) => {
+    const atom = new TextBlockAtom(atoms);
+    atom.toBox().toHtml();
     return atom;
   };
 
   export const isInBlock = ([x, y]: [number, number], block: HTMLElement) => {
-    const rects = Array.from(block.getClientRects());
-    for (const rect of rects) {
-      if (x > rect.left && x < rect.right && y > rect.top && y < rect.bottom) {
-        return true;
-      }
-    }
-    return false;
+    const rect = block.getBoundingClientRect();
+    return x > rect.left && x < rect.right && y > rect.top && y < rect.bottom;
   };
 
   export const getLineRect = (target: HTMLElement, block: HTMLElement) => {
@@ -133,7 +120,6 @@ export module Util {
         return rect;
       }
     }
-    console.log(rects);
     throw new Error("target html is not in block");
   };
 

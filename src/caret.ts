@@ -1,3 +1,4 @@
+import { InlineBlockAtom } from "./atom";
 import {
   Atom,
   FirstAtom,
@@ -69,16 +70,21 @@ export class Caret {
     }
     sel === null ? this.action.focus() : this.action.blur();
     if (this.sel === null) return;
+    const { elem } = this.cur();
+    if (!elem) return;
+    if (!elem.parentElement) throw new Error("Parent element not found");
+    const parentRect = Util.getLineRect(elem, elem.parentElement);
     const [start, last] = this.range().map((i) => this.target?.body[i]);
     const [relX, relY] = this.toReltiveCoord([
       Util.right(start),
-      Util.top(this.target),
+      parentRect.top,
     ]);
     EngineSuggestion.set(this.getValue(), [
       Util.right(start),
-      Util.top(this.target) + Util.height(this.target),
+      Util.top(this.target) + parentRect.height,
     ]);
-    this.selElem.style.height = `${Util.height(this.target)}px`;
+
+    this.selElem.style.height = `${parentRect.height}px`;
     this.selElem.style.transform = `translate(${relX}px,${relY}px)`;
     this.selElem.style.width = `${Util.right(last) - Util.right(start)}px`;
   };
@@ -126,6 +132,9 @@ export class Caret {
     if (this.isLast()) {
       if (this.isSup() || this.isSub()) {
         this.exitSupSub("right");
+      } else if (this.target instanceof InlineBlockAtom) {
+        const newAtom = this.target.parent as GroupAtom;
+        this.set(newAtom, newAtom.body.indexOf(this.target));
       } else if (this.isNumer() || this.isDenom()) {
         this.exitFrac();
       } else if (this.isBody()) {
@@ -157,6 +166,8 @@ export class Caret {
         } else {
           throw new Error("SupSubAtom must have sup or sub");
         }
+      } else if (cur instanceof InlineBlockAtom) {
+        this.set(cur, 0);
       } else if (Util.isSingleBody(cur)) {
         this.set(cur.body, 0);
       } else if (cur instanceof FracAtom) {
@@ -181,6 +192,9 @@ export class Caret {
       } else if (this.isNumer() || this.isDenom()) {
         this.exitFrac();
         this.set(this.target, this.pos - 1);
+      } else if (this.target instanceof InlineBlockAtom) {
+        const newAtom = this.target.parent as GroupAtom;
+        this.set(newAtom, newAtom.body.indexOf(this.target) - 1);
       } else if (this.isBody()) {
         this.exitBody("left");
         this.set(this.target, this.pos - 1);
@@ -209,6 +223,8 @@ export class Caret {
         }
       } else if (cur instanceof FracAtom) {
         this.set(cur.numer, cur.numer.body.length - 1);
+      } else if (cur instanceof InlineBlockAtom) {
+        this.set(cur, cur.body.length - 1);
       } else if (Util.isSingleBody(cur)) {
         this.set(cur.body, cur.body.body.length - 1);
       } else if (cur instanceof MatrixAtom) {

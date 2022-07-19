@@ -96,3 +96,7 @@ button:hover {
 .focus {
   background-color: rgba(186, 217, 230, 0.4);
 }
+
+.text {
+  font-family: Main-R;
+}
