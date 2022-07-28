@@ -23,7 +23,7 @@ export const setRecord = (data: Record) => {
 
 export const redo = (
   setMg: SetManager,
-  setSel: (sel: [anchlor: number, offset: number] | null) => void,
+  setSel: (sel: [anchlor: Atom, offset: Atom] | null) => void,
   once?: boolean
 ) => {
   if (record.index === record.data.length - 1) return;
@@ -44,7 +44,7 @@ export const redo = (
 
 export const undo = (
   setMg: SetManager,
-  setSel: (sel: [anchlor: number, offset: number] | null) => void,
+  setSel: (sel: [anchlor: Atom, offset: Atom] | null) => void,
   once?: boolean
 ) => {
   if (record.index === -1) return;
@@ -57,7 +57,11 @@ export const undo = (
   if (action === "delete") {
     manager.body.splice(position, 0, ...atoms);
     setMg(manager, position - 1, true);
-    if (atoms.length > 1) setSel([position - 1, position + atoms.length - 1]);
+    if (atoms.length > 1)
+      setSel([
+        manager.body[position - 1],
+        manager.body[position + atoms.length - 1],
+      ]);
   }
   record.index -= 1;
   if (once) return;

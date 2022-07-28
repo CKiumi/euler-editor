@@ -26,10 +26,8 @@ matBuilderBtn!.onclick = () => {
 };
 
 eulerNote.addEventListener("mount", () => {
-  eulerNote.set("$\\sqrt{xxx}\\hat{xx}$");
   eulerNote.set(
-    `The equation $yy$ below $xx$ T
-he equation $yy$ below $xx$ The equation $yy$ below $xx$\\[zz\\]$yy$\\begin{equation*}\\frac{x}{y}\\sqrt{xxx}\\hat{xx}bb\\end{equation*}`
+    String.raw`7.1 In this section we consider an evolving metric $\left( g_{ij}\right)_{\tau } =2R_{ij}$ on a manifold $M$; we assume that either $M$ is closed, or $g_{ij} \left(\tau \right)$ are complete and have uniformly bounded curvatures. To each curve $\gamma \left(\tau \right),0 s \tau _{1} \leq \tau \leq \tau _{2}$, we associate its $\mathcal{L}$-length\[\mathcal{L} \left(\gamma \right)=\int _{\tau _{1}}^{\tau _{2}}\sqrt{\tau }\left( R\left(\gamma \left(\tau \right)\right)+s\gamma  \left(\tau \right)s^{2}\right) d\tau \]`
   );
 });
 const wait = () => new Promise((resolve) => setTimeout(resolve, 400));

@@ -4,6 +4,7 @@ import {
   AtomKind,
   Box,
   FirstAtom,
+  getSpacing,
   GroupAtom,
   parse,
 } from "euler-tex/src/lib";
@@ -32,7 +33,9 @@ export class CharBox implements Box {
     const { char } = this;
     const span = document.createElement("span");
     if (char === "\n") {
-      span.append(document.createElement("br"), document.createElement("span"));
+      const first = document.createElement("span");
+      first.innerHTML = "&#8203;";
+      span.append(document.createElement("br"), first);
       if (this.atom) this.atom.elem = span;
       return span;
     }
@@ -73,9 +76,15 @@ export class InlineBlockAtom extends GroupAtom {
   }
 
   toBox(options?: Options): Box {
+    let prevKind: AtomKind | null;
     const children = this.body.map((atom) => {
       const box = atom.toBox(options);
       atom.parent = this;
+      if (prevKind && atom.kind) {
+        box.space.left =
+          (box.space.left ?? 0) + getSpacing(prevKind, atom.kind);
+      }
+      prevKind = atom.kind;
       return box;
     });
     return new BlockBox("inline", children, this);
@@ -101,6 +110,11 @@ export class BlockBox implements Box {
     this.children.forEach((box) => {
       span.append(box.toHtml());
     });
+    if (this.children.length === 1) {
+      const space = document.createElement("span");
+      space.innerHTML = "&nbsp;";
+      span.append(space);
+    }
     if (this.atom) this.atom.elem = span;
     return span;
   }

@@ -1,4 +1,4 @@
-import { InlineBlockAtom } from "./atom";
+import { CharAtom, InlineBlockAtom } from "./atom";
 import {
   Atom,
   FirstAtom,
@@ -15,14 +15,14 @@ import { Util } from "./util";
 export type Sel = [anchor: number, offset: number];
 type Action = { focus: () => void; blur: () => void; render: () => void };
 export class Caret {
-  sel: Sel | null = null;
+  sel: [anchor: Atom, offset: Atom] | null = null;
+  public selElem: HTMLElement[] = [];
+  public target: GroupAtom = new GroupAtom([], true);
+  public pos = 0;
   constructor(
     public elem: HTMLElement,
     public field: HTMLElement,
-    public action: Action,
-    public selElem: HTMLElement,
-    public target: GroupAtom = new GroupAtom([], true),
-    public pos: number = 0
+    public action: Action
   ) {
     this.elem.style.height = "0";
   }
@@ -59,34 +59,48 @@ export class Caret {
   range() {
     if (!this.sel)
       throw new Error("sel must be specified when calling renge()");
-    return [...this.sel].sort((a, b) => a - b) as [a: number, b: number];
+    const range = this.sel.map((x) => (x.parent as GroupAtom).body.indexOf(x));
+    return range.sort((a, b) => a - b) as [a: number, b: number];
   }
 
-  setSel = (sel: [anchlor: number, offset: number] | null) => {
-    this.selElem.style.width = "0px";
+  setSel = (sel: [anchlor: Atom, offset: Atom] | null) => {
+    this.selElem.forEach((elem) => elem.remove());
     this.sel = sel;
     if (sel === null) {
       EngineSuggestion.reset();
+      return;
     }
-    sel === null ? this.action.focus() : this.action.blur();
-    if (this.sel === null) return;
-    const { elem } = this.cur();
-    if (!elem) return;
-    if (!elem.parentElement) throw new Error("Parent element not found");
-    const parentRect = Util.getLineRect(elem, elem.parentElement);
-    const [start, last] = this.range().map((i) => this.target?.body[i]);
-    const [relX, relY] = this.toReltiveCoord([
-      Util.right(start),
-      parentRect.top,
-    ]);
-    EngineSuggestion.set(this.getValue(), [
-      Util.right(start),
-      Util.top(this.target) + parentRect.height,
-    ]);
 
-    this.selElem.style.height = `${parentRect.height}px`;
-    this.selElem.style.transform = `translate(${relX}px,${relY}px)`;
-    this.selElem.style.width = `${Util.right(last) - Util.right(start)}px`;
+    const [start, last] = this.range().map((i) => this.target?.body[i]);
+
+    if (!start.elem || !last.elem) return;
+    if (!start.elem.parentElement) throw new Error("Parent element not found");
+    const rects = Util.getLineRects(
+      start.elem,
+      last.elem,
+      start.elem.parentElement
+    );
+    this.selElem = [];
+
+    rects.forEach((rect, i) => {
+      const left = i === 0 ? Util.right(start) : rect.left;
+      const right = i === rects.length - 1 ? Util.right(last) : rect.right;
+      const [relX, relY] = this.toReltiveCoord([left, rect.top]);
+      const div = document.createElement("div");
+      div.className = "EE_selection";
+      this.selElem.push(div);
+      this.field.insertAdjacentElement("afterbegin", div);
+      this.selElem[i].style.height = `${rect.height}px`;
+      this.selElem[i].style.transform = `translate(${relX}px,${relY}px)`;
+      this.selElem[i].style.width = `${right - left}px`;
+    });
+
+    if (!this.isTextMode()) {
+      EngineSuggestion.set(this.getValue(), [
+        Util.right(start),
+        Util.top(this.target) + rects[0].height,
+      ]);
+    }
   };
 
   setAtoms(atoms: GroupAtom) {
@@ -298,36 +312,65 @@ export class Caret {
 
   shiftRight() {
     if (this.isLast()) return;
-    const pos = this.pos;
-    this.set(this.target, pos + 1);
-    this.setSel(this.sel === null ? [pos, pos + 1] : [this.sel[0], pos + 1]);
+    const anchor = this.cur();
+    this.set(this.target, this.pos + 1);
+    this.setSel(
+      this.sel === null
+        ? [anchor, this.target.body[this.pos]]
+        : [this.sel[0], this.target.body[this.pos]]
+    );
   }
 
   shiftLeft() {
     if (this.isFirst()) return;
     const pos = this.pos;
     this.set(this.target, pos - 1);
-    this.setSel(this.sel === null ? [pos, pos - 1] : [this.sel[0], pos - 1]);
+    this.setSel(
+      this.sel === null
+        ? [this.target.body[pos], this.target.body[pos - 1]]
+        : [this.sel[0], this.target.body[pos - 1]]
+    );
   }
 
   selectLeft() {
     const pos = this.pos;
-    this.setSel(this.sel === null ? [pos, 0] : [this.sel[0], 0]);
-    this.set(this.target, 0);
+    let last = 0;
+    for (let i = pos; i > 0; i--) {
+      if ((this.target.body[i] as CharAtom).char === "\n") {
+        last = i;
+        break;
+      }
+    }
+    this.setSel(
+      this.sel === null
+        ? [this.target.body[pos], this.target.body[last]]
+        : [this.sel[0], this.target.body[last]]
+    );
+    this.set(this.target, last);
   }
 
   selectRight() {
     const pos = this.pos;
-    const last = this.target.body.length - 1;
-    this.setSel(this.sel === null ? [pos, last] : [this.sel[0], last]);
+    let last = this.target.body.length - 1;
+    for (let i = pos; i < this.target.body.length; i++) {
+      if ((this.target.body[i] as CharAtom).char === "\n") {
+        last = i - 1;
+        break;
+      }
+    }
+    this.setSel(
+      this.sel === null
+        ? [this.target.body[pos], this.target.body[last]]
+        : [this.sel[0], this.target.body[last]]
+    );
     this.set(this.target, last);
   }
 
   extendSel = (x: number) => {
-    const start = this.sel?.[0] ?? this.pos;
+    const start = this.sel?.[0] ?? this.cur();
     this.pointAtomHol(x, this.target);
     const last = this.pos;
-    this.setSel([start, last]);
+    this.setSel([start, this.target.body[last]]);
   };
 
   replaceRange = (newAtoms: Atom[] | null, range: [number, number]) => {
@@ -485,7 +528,10 @@ export class Caret {
 
   addPar() {
     if (this.sel !== null) {
-      const [start, end] = [...this.sel].sort((a, b) => a - b);
+      const range = this.sel.map((x) =>
+        (x.parent as GroupAtom).body.indexOf(x)
+      );
+      const [start, end] = range.sort((a, b) => a - b);
       const body = this.target.body.slice(start + 1, end + 1);
       this.insert([new LRAtom("(", ")", new GroupAtom(body, true))]);
     } else {
@@ -499,6 +545,10 @@ export class Caret {
     if (render) this.action.render();
     this.renderCaret();
   };
+
+  isTextMode = () => this.target.elem?.classList.contains("text");
+  isDisplayMode = () => this.target.elem?.classList.contains("display");
+  isInlineMode = () => this.target.elem?.classList.contains("inline");
 
   isSup() {
     if (!(this.target.parent instanceof SupSubAtom)) return false;

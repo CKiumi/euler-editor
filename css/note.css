@@ -50,8 +50,7 @@ math-field {
 .EE_container {
   display: block;
   position: relative;
-  width: fit-content;
-  min-width: 100%;
+  width: 100%;
 }
 
 .EE_textarea {
@@ -75,22 +74,19 @@ button:hover {
   background-color: rgb(17, 82, 147);
 }
 
-/* .line {
-  position: relative;
-  min-height: 30px;
-  line-height: unset !important;
-  padding: 5px 1px;
-  min-width: 100%;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-} */
-
 .display,
 .inline,
 .text {
   /* Without position relative, the selection overlay won't work as expected */
   position: relative;
+  /* set break-all temporarily, since each character is wrapped in span and can't detect words */
+  word-break: break-all;
+}
+
+.inline {
+  /* prevent to stick with the last text so that unable to point first atom of inline math */
+  margin-left: 1px;
+  display: inline-block;
 }
 
 .focus {

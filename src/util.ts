@@ -18,7 +18,7 @@ import {
   LETTER2,
   LETTER3,
 } from "euler-tex/src/parser/command";
-import { InlineBlockAtom, TextBlockAtom } from "./atom";
+import { CharAtom, InlineBlockAtom, TextBlockAtom } from "./atom";
 
 export module Util {
   export const children = (atom: Atom): Atom[] => {
@@ -123,29 +123,53 @@ export module Util {
     throw new Error("target html is not in block");
   };
 
+  export const getLineRects = (
+    anchor: HTMLElement,
+    target: HTMLElement,
+    block: HTMLElement
+  ) => {
+    const rects = Array.from(block.getClientRects());
+    return rects.filter((rect, i) => {
+      if (i === 0) {
+        return rect.bottom > anchor.getBoundingClientRect().y;
+      }
+      return (
+        rect.bottom > anchor.getBoundingClientRect().y &&
+        rects[i - 1].bottom <= target.getBoundingClientRect().y
+      );
+    });
+  };
+
   export const serializeGroupAtom = (atoms: Atom[]): string => {
     return atoms
       .map((atom) => serialize(atom))
       .filter(Boolean)
-      .join(" ");
+      .join("");
   };
 
   export const serialize = (atom: Atom): string => {
+    if (atom instanceof CharAtom) {
+      if (atom.char === "&nbsp;") return " ";
+      return atom.char;
+    }
     if (atom instanceof SymAtom) {
       let result;
       if (atom.char === "−") return "-";
       result = Object.keys(LETTER1).find((key) => LETTER1[key] === atom.char);
-      if (result) return result;
+      if (result) return result + " ";
       result = Object.keys(LETTER2).find((key) => LETTER2[key] === atom.char);
-      if (result) return result;
+      if (result) return result + " ";
       result = Object.keys(LETTER3).find((key) => LETTER3[key] === atom.char);
-      if (result) return result;
+      if (result) return result + " ";
       result = Object.keys(BlockOp).find((key) => BlockOp[key] === atom.char);
-      if (result) return result;
+      if (result) return result + " ";
       return atom.char;
     }
+    if (atom instanceof InlineBlockAtom) {
+      return "$" + serializeGroupAtom(atom.body) + "$";
+    }
     if (atom instanceof OpAtom) {
-      return "\\" + atom.body;
+      return "\\" + atom.body + " ";
     }
     if (atom instanceof SqrtAtom) {
       return `\\sqrt{${serializeGroupAtom(atom.body.body)}}`;
