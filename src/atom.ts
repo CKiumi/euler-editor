@@ -19,16 +19,20 @@ export class CharAtom implements Atom {
   kind: AtomKind = "ord";
   elem: HTMLSpanElement | null = null;
   parent: Atom | null = null;
-  constructor(public char: string) {}
+  constructor(public char: string, public composite?: boolean) {}
   toBox(): CharBox {
-    return new CharBox(this.char, this);
+    return new CharBox(this.char, this, this.composite);
   }
 }
 
 export class CharBox implements Box {
   rect: Rect = { width: 0, height: 0, depth: 0 };
   space: Space = {};
-  constructor(public char: string, public atom?: Atom) {}
+  constructor(
+    public char: string,
+    public atom: Atom,
+    public composite?: boolean
+  ) {}
   toHtml(): HTMLSpanElement {
     const { char } = this;
     const span = document.createElement("span");
@@ -36,11 +40,12 @@ export class CharBox implements Box {
       const first = document.createElement("span");
       first.innerHTML = "&#8203;";
       span.append(document.createElement("br"), first);
-      if (this.atom) this.atom.elem = span;
+      this.atom.elem = span;
       return span;
     }
     span.innerHTML = char;
-    if (this.atom) this.atom.elem = span;
+    if (this.composite) span.style.textDecoration = "underline";
+    this.atom.elem = span;
     return span;
   }
 }

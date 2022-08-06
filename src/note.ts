@@ -67,6 +67,34 @@ export class EulerEditor extends HTMLElement {
       ev.clipboardData &&
         this.caret.insert(parse(ev.clipboardData.getData("text/plain"), true));
     });
+    this.textarea.addEventListener("compositionstart", () => {
+      this.textarea.value = "";
+      this.textarea.style.transform = this.caret.elem.style.transform;
+    });
+    this.textarea.addEventListener("compositionupdate", (ev) => {
+      while ((this.caret.cur() as CharAtom).composite) {
+        this.caret.delete();
+      }
+      this.caret.target.body = this.caret.target.body.filter(
+        (atom) => !(atom as CharAtom).composite
+      );
+      this.renderLine();
+      this.caret.insert(
+        Array.from(ev.data).map(
+          (c) => new CharAtom(ev.data === " " ? "&nbsp;" : c, true)
+        )
+      );
+    });
+    this.textarea.addEventListener("compositionend", (ev) => {
+      while ((this.caret.cur() as CharAtom).composite) {
+        this.caret.delete();
+      }
+      this.caret.insert(
+        Array.from(ev.data).map(
+          (c) => new CharAtom(ev.data === " " ? "&nbsp;" : c)
+        )
+      );
+    });
     this.set("");
   }
 
@@ -163,6 +191,7 @@ export class EulerEditor extends HTMLElement {
   }
 
   input(ev: InputEvent) {
+    if (ev.isComposing) return;
     if (!ev.data) {
       Suggestion.reset();
       return;
@@ -225,6 +254,7 @@ export class EulerEditor extends HTMLElement {
   };
 
   onKeyDown(ev: KeyboardEvent) {
+    if (ev.isComposing) return;
     if (ev.code == "Enter" && this.caret.isTextMode()) {
       const atom = new CharAtom("\n");
       this.caret.insert([atom]);
