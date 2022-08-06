@@ -366,9 +366,9 @@ export class Caret {
     this.set(this.target, last);
   }
 
-  extendSel = (x: number) => {
+  extendSel = (x: number, y: number) => {
     const start = this.sel?.[0] ?? this.cur();
-    this.pointAtomHol(x, this.target);
+    this.pointBlock(x, y, this.target);
     const last = this.pos;
     this.setSel([start, this.target.body[last]]);
   };
@@ -456,6 +456,45 @@ export class Caret {
     this.renderCaret();
   };
 
+  pointBlock = (x: number, y: number, group: GroupAtom) => {
+    if (!group.elem) throw new Error("Expect elem");
+    const { bottom } = group.elem.getBoundingClientRect();
+    if (bottom > y) {
+      const rects = Array.from(group.elem.getClientRects());
+      for (const rect of rects) {
+        if (rect.right < x && rect.bottom > y && rect.top < y) {
+          x = rect.right;
+          y = rect.top;
+        }
+      }
+    }
+    const { body: atoms } = group;
+    if (atoms.length === 1) {
+      this.set(group, 0);
+      return;
+    }
+    this.setSel(null);
+    let i = 0;
+    let prevDistance = Infinity;
+    for (const [index, atom] of group.body.entries()) {
+      const newDistance = distance(
+        [Util.right(atom), Util.yCenter(atom)],
+        [x, y]
+      );
+      if (newDistance < prevDistance) {
+        prevDistance = newDistance;
+        i = index;
+      }
+      if (atom instanceof InlineBlockAtom) {
+        if (Util.bottom(atom) > y && Util.right(atom) > x) {
+          break;
+        }
+      }
+    }
+    this.set(group, i);
+    this.renderCaret();
+  };
+
   pointAtom = (x: number, y: number, group: GroupAtom) => {
     const { body: atoms } = group;
     if (atoms.length === 1) {
@@ -465,7 +504,7 @@ export class Caret {
     this.setSel(null);
     let i = 0;
     let prevDistance = Infinity;
-    group.body.forEach((atom, index) => {
+    for (const [index, atom] of group.body.entries()) {
       const newDistance = distance(
         [Util.right(atom), Util.yCenter(atom)],
         [x, y]
@@ -474,7 +513,12 @@ export class Caret {
         prevDistance = newDistance;
         i = index + 1;
       }
-    });
+      if (atom instanceof InlineBlockAtom) {
+        if (Util.bottom(atom) > y && Util.right(atom) > x) {
+          break;
+        }
+      }
+    }
 
     const atom = (() => {
       if (i === atoms.length) {

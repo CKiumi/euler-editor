@@ -11,7 +11,7 @@ import {
   SymAtom,
 } from "euler-tex/src/lib";
 import { latexToBlocks } from "euler-tex/src/parser/textParser";
-import { CharAtom, latexToInlineAtom } from "./atom";
+import { CharAtom, latexToInlineAtom, TextBlockAtom } from "./atom";
 import { Caret } from "./caret";
 import { MatrixBuilder, MatrixDestructor } from "./mat";
 import { redo, undo } from "./record";
@@ -59,7 +59,15 @@ export class EulerEditor extends HTMLElement {
     this.textarea.addEventListener("input", (ev) =>
       this.input(ev as InputEvent)
     );
-    this.addEventListener("pointerdown", (ev) => this.onPointerDown(ev));
+
+    this.addEventListener("pointerdown", (ev) => {
+      this.onPointerDown(ev);
+    });
+    this.addEventListener("pointermove", (ev: PointerEvent) => {
+      if (ev.buttons === 1 && ev.timeStamp) {
+        this.caret.extendSel(ev.clientX, ev.clientY);
+      }
+    });
     this.textarea.addEventListener("keydown", (ev) => this.onKeyDown(ev));
     this.textarea.addEventListener("cut", (ev) => this.caret.cut(ev));
     this.textarea.addEventListener("copy", (ev) => this.caret.copy(ev));
@@ -365,16 +373,23 @@ export class EulerEditor extends HTMLElement {
         MatrixDestructor.reset();
         return;
       }
-      this.caret.setSel(null);
-      if (Suggestion.view.isOpen()) Suggestion.view.down();
-      else if (!this.caret.moveDown()) {
+
+      if (Suggestion.view.isOpen()) {
+        this.caret.setSel(null);
+        Suggestion.view.down();
+      } else if (!this.caret.moveDown()) {
+        const prev = this.caret.sel?.[0] ?? this.caret.cur();
         if (
           Util.bottom(this.lines[this.lines.length - 1]) <
           Util.bottom(this.caret.cur()) + 20
         )
           return;
         this.pointAtom([this.caret.x(), Util.bottom(this.caret.cur()) + 20]);
-        this.caret.setSel(null);
+        if (ev.shiftKey && prev.parent instanceof TextBlockAtom) {
+          this.caret.setSel([prev, this.caret.cur()]);
+        } else {
+          this.caret.setSel(null);
+        }
         return;
       }
     }
@@ -391,9 +406,12 @@ export class EulerEditor extends HTMLElement {
         MatrixDestructor.view.select("top");
         return;
       }
-      this.caret.setSel(null);
-      if (Suggestion.view.isOpen()) Suggestion.view.up();
-      else if (!this.caret.moveUp()) {
+
+      if (Suggestion.view.isOpen()) {
+        Suggestion.view.up();
+        this.caret.setSel(null);
+      } else if (!this.caret.moveUp()) {
+        const prev = this.caret.sel?.[0] ?? this.caret.cur();
         if (this.caret.isDisplayMode()) {
           this.pointAtom([
             this.caret.x(),
@@ -403,7 +421,11 @@ export class EulerEditor extends HTMLElement {
           this.pointAtom([this.caret.x(), Util.top(this.caret.cur()) - 20]);
         }
 
-        this.caret.setSel(null);
+        if (ev.shiftKey && prev.parent instanceof TextBlockAtom) {
+          this.caret.setSel([prev, this.caret.cur()]);
+        } else {
+          this.caret.setSel(null);
+        }
         return;
       }
     }
@@ -435,7 +457,7 @@ export class EulerEditor extends HTMLElement {
     }
   }
   onPointerDown(ev: PointerEvent) {
-    if (ev.shiftKey) return this.caret.extendSel(ev.clientX);
+    if (ev.shiftKey) return this.caret.extendSel(ev.clientX, ev.clientY);
     Suggestion.reset();
     MatrixBuilder.reset();
     MatrixDestructor.reset();
