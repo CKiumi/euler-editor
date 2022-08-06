@@ -121,8 +121,15 @@ export class EulerEditor extends HTMLElement {
     });
   };
 
-  getLatex = (): string[] => {
-    return this.lines.map((line) => Util.serializeGroupAtom(line.body));
+  getLatex = (): string => {
+    return this.lines
+      .map((line) => {
+        if (line.elem?.classList.contains("display")) {
+          return String.raw`\[${Util.serializeGroupAtom(line.body)}\]`;
+        }
+        return Util.serializeGroupAtom(line.body);
+      })
+      .join("");
   };
 
   curLine = () => this.lines[this.lineIndex];
