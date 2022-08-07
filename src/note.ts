@@ -81,27 +81,21 @@ export class EulerEditor extends HTMLElement {
     });
     this.textarea.addEventListener("compositionupdate", (ev) => {
       while ((this.caret.cur() as CharAtom).composite) {
-        this.caret.delete();
+        this.caret.target.body.splice(this.caret.pos, 1)[0];
+        this.caret.set(this.caret.target, this.caret.pos - 1);
       }
-      this.caret.target.body = this.caret.target.body.filter(
-        (atom) => !(atom as CharAtom).composite
-      );
+      const atoms = Array.from(ev.data).map((c) => new CharAtom(c, true));
+      this.caret.target.body.splice(this.caret.pos + 1, 0, ...atoms);
       this.renderLine();
-      this.caret.insert(
-        Array.from(ev.data).map(
-          (c) => new CharAtom(ev.data === " " ? "&nbsp;" : c, true)
-        )
-      );
+      this.caret.set(this.caret.target, this.caret.pos + atoms.length);
     });
+
     this.textarea.addEventListener("compositionend", (ev) => {
       while ((this.caret.cur() as CharAtom).composite) {
-        this.caret.delete();
+        this.caret.target.body.splice(this.caret.pos, 1)[0];
+        this.caret.set(this.caret.target, this.caret.pos - 1);
       }
-      this.caret.insert(
-        Array.from(ev.data).map(
-          (c) => new CharAtom(ev.data === " " ? "&nbsp;" : c)
-        )
-      );
+      this.caret.insert(Array.from(ev.data).map((c) => new CharAtom(c)));
     });
     this.set("");
   }
@@ -127,9 +121,7 @@ export class EulerEditor extends HTMLElement {
     let texts: Atom[] = [];
     latexToBlocks(latex).forEach(({ mode, latex }) => {
       if (mode === "text") {
-        const atoms = latex
-          .split("")
-          .map((char) => new CharAtom(char === " " ? "&nbsp;" : char));
+        const atoms = latex.split("").map((char) => new CharAtom(char));
         texts.push(...atoms);
         return;
       }
@@ -216,7 +208,7 @@ export class EulerEditor extends HTMLElement {
         this.focus();
         return;
       }
-      const atom = new CharAtom(ev.data === " " ? "&nbsp;" : ev.data);
+      const atom = new CharAtom(ev.data);
       this.caret.insert([atom]);
       return;
     }

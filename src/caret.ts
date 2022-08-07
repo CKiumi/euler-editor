@@ -103,10 +103,6 @@ export class Caret {
     }
   };
 
-  setAtoms(atoms: GroupAtom) {
-    this.target = atoms;
-  }
-
   insert = (atoms: Atom[]) => {
     if (this.sel !== null) return this.replaceRange(atoms, this.range());
     this.target.body.splice(this.pos + 1, 0, ...atoms);
@@ -115,7 +111,7 @@ export class Caret {
     setRecord({
       action: "insert",
       manager: this.target,
-      position: this.pos - 1,
+      position: this.pos - atoms.length,
       atoms,
     });
   };

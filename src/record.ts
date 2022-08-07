@@ -49,7 +49,6 @@ export const undo = (
 ) => {
   if (record.index === -1) return;
   const { action, manager, position, atoms } = record.data[record.index];
-  setSel(null);
   if (action === "insert") {
     manager.body.splice(position + 1, atoms.length);
     setMg(manager, position, true);
