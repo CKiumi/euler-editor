@@ -18,11 +18,23 @@ import {
   LETTER2,
   LETTER3,
 } from "euler-tex/src/parser/command";
-import { CharAtom, InlineBlockAtom, TextBlockAtom } from "./atom";
+import { CharAtom, MathBlockAtom, TextBlockAtom } from "./atom";
 
 export module Util {
+  export const parentBlock = (atom: Atom): Atom => {
+    let parent = atom.parent;
+    while (
+      !(parent instanceof TextBlockAtom) &&
+      !(parent instanceof MathBlockAtom)
+    ) {
+      if (!parent) throw new Error("Parent Expected");
+      parent = parent.parent;
+    }
+    return parent;
+  };
+
   export const children = (atom: Atom): Atom[] => {
-    if (atom instanceof GroupAtom || atom instanceof InlineBlockAtom) {
+    if (atom instanceof GroupAtom || atom instanceof MathBlockAtom) {
       return atom.body.flatMap((atom) => children(atom));
     } else if (atom instanceof SupSubAtom) {
       const nucs = children(atom.nuc);
@@ -165,8 +177,12 @@ export module Util {
       if (result) return result + " ";
       return atom.char;
     }
-    if (atom instanceof InlineBlockAtom) {
-      return "$" + serializeGroupAtom(atom.body) + "$";
+    if (atom instanceof MathBlockAtom) {
+      if (atom.mode === "display") {
+        return "\\[" + serializeGroupAtom(atom.body) + "\\]";
+      } else {
+        return "$" + serializeGroupAtom(atom.body) + "$";
+      }
     }
     if (atom instanceof OpAtom) {
       return "\\" + atom.body + " ";

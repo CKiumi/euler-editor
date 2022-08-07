@@ -1,4 +1,4 @@
-import { CharAtom, InlineBlockAtom } from "./atom";
+import { CharAtom, MathBlockAtom } from "./atom";
 import {
   Atom,
   FirstAtom,
@@ -142,7 +142,7 @@ export class Caret {
     if (this.isLast()) {
       if (this.isSup() || this.isSub()) {
         this.exitSupSub("right");
-      } else if (this.target instanceof InlineBlockAtom) {
+      } else if (this.target instanceof MathBlockAtom) {
         const newAtom = this.target.parent as GroupAtom;
         this.set(newAtom, newAtom.body.indexOf(this.target));
       } else if (this.isNumer() || this.isDenom()) {
@@ -176,7 +176,7 @@ export class Caret {
         } else {
           throw new Error("SupSubAtom must have sup or sub");
         }
-      } else if (cur instanceof InlineBlockAtom) {
+      } else if (cur instanceof MathBlockAtom) {
         this.set(cur, 0);
       } else if (Util.isSingleBody(cur)) {
         this.set(cur.body, 0);
@@ -202,7 +202,7 @@ export class Caret {
       } else if (this.isNumer() || this.isDenom()) {
         this.exitFrac();
         this.set(this.target, this.pos - 1);
-      } else if (this.target instanceof InlineBlockAtom) {
+      } else if (this.target instanceof MathBlockAtom) {
         const newAtom = this.target.parent as GroupAtom;
         this.set(newAtom, newAtom.body.indexOf(this.target) - 1);
       } else if (this.isBody()) {
@@ -233,7 +233,7 @@ export class Caret {
         }
       } else if (cur instanceof FracAtom) {
         this.set(cur.numer, cur.numer.body.length - 1);
-      } else if (cur instanceof InlineBlockAtom) {
+      } else if (cur instanceof MathBlockAtom) {
         this.set(cur, cur.body.length - 1);
       } else if (Util.isSingleBody(cur)) {
         this.set(cur.body, cur.body.body.length - 1);
@@ -364,7 +364,7 @@ export class Caret {
 
   extendSel = (x: number, y: number) => {
     const start = this.sel?.[0] ?? this.cur();
-    this.pointBlock(x, y, this.target);
+    this.pointAtom(x, y, this.target, false);
     const last = this.pos;
     this.setSel([start, this.target.body[last]]);
   };
@@ -424,7 +424,6 @@ export class Caret {
       return;
     }
     const atom = this.target.body.splice(this.pos, 1)[0];
-    this.action.render();
     setRecord({
       action: "delete",
       manager: this.target,
@@ -432,6 +431,7 @@ export class Caret {
       atoms: [atom],
     });
     this.set(this.target, this.pos - 1);
+    this.action.render();
   }
 
   toReltiveCoord(coord: [number, number]): [number, number] {
@@ -452,7 +452,13 @@ export class Caret {
     this.renderCaret();
   };
 
-  pointBlock = (x: number, y: number, group: GroupAtom) => {
+  pointAtom = (x: number, y: number, group: GroupAtom, recursive: boolean) => {
+    if (this.isTextMode() && Util.bottom(group) < y) {
+      return this.set(group, group.body.length - 1);
+    }
+    if (this.isTextMode() && Util.top(group) > y) {
+      return;
+    }
     if (!group.elem) throw new Error("Expect elem");
     const { bottom } = group.elem.getBoundingClientRect();
     if (bottom > y) {
@@ -477,65 +483,48 @@ export class Caret {
         [Util.right(atom), Util.yCenter(atom)],
         [x, y]
       );
+      if (atom instanceof MathBlockAtom) {
+        if (
+          Util.top(atom) < y &&
+          Util.bottom(atom) > y &&
+          Util.right(atom) > x &&
+          Util.left(atom) < x
+        ) {
+          i = index;
+          break;
+        }
+      }
       if (newDistance < prevDistance) {
         prevDistance = newDistance;
         i = index;
       }
-      if (atom instanceof InlineBlockAtom) {
-        if (Util.bottom(atom) > y && Util.right(atom) > x) {
-          break;
+    }
+    if (recursive) {
+      const atom = (() => {
+        if (i === atoms.length) {
+          return atoms[i - 1];
+        } else {
+          return [
+            ...Util.children(atoms[i - 1]),
+            ...Util.children(atoms[i]),
+          ].reduce((prev, cur) => {
+            if (
+              distance([Util.right(cur), Util.yCenter(cur)], [x, y]) <=
+              distance([Util.right(prev), Util.yCenter(prev)], [x, y])
+            ) {
+              return cur;
+            } else return prev;
+          });
         }
+      })();
+      const parent = atom.parent as GroupAtom;
+      if (parent) {
+        this.set(parent, parent.body.indexOf(atom));
+        this.renderCaret();
       }
-    }
-    this.set(group, i);
-    this.renderCaret();
-  };
-
-  pointAtom = (x: number, y: number, group: GroupAtom) => {
-    const { body: atoms } = group;
-    if (atoms.length === 1) {
-      this.set(group, 0);
-      return;
-    }
-    this.setSel(null);
-    let i = 0;
-    let prevDistance = Infinity;
-    for (const [index, atom] of group.body.entries()) {
-      const newDistance = distance(
-        [Util.right(atom), Util.yCenter(atom)],
-        [x, y]
-      );
-      if (newDistance < prevDistance) {
-        prevDistance = newDistance;
-        i = index + 1;
-      }
-      if (atom instanceof InlineBlockAtom) {
-        if (Util.bottom(atom) > y && Util.right(atom) > x) {
-          break;
-        }
-      }
-    }
-
-    const atom = (() => {
-      if (i === atoms.length) {
-        return atoms[i - 1];
-      } else {
-        return [
-          ...Util.children(atoms[i - 1]),
-          ...Util.children(atoms[i]),
-        ].reduce((prev, cur) => {
-          if (
-            distance([Util.right(cur), Util.yCenter(cur)], [x, y]) <=
-            distance([Util.right(prev), Util.yCenter(prev)], [x, y])
-          ) {
-            return cur;
-          } else return prev;
-        });
-      }
-    })();
-    const parent = atom.parent as GroupAtom;
-    if (parent) {
-      this.set(parent, parent.body.indexOf(atom));
+      this.action.focus();
+    } else {
+      this.set(group, i);
       this.renderCaret();
     }
   };
@@ -587,7 +576,10 @@ export class Caret {
   };
 
   isTextMode = () => this.target.elem?.classList.contains("text");
-  isDisplayMode = () => this.target.elem?.classList.contains("display");
+  isDisplayMode = () => {
+    const parent = Util.parentBlock(this.cur());
+    return parent instanceof MathBlockAtom && parent.mode === "display";
+  };
   isInlineMode = () => this.target.elem?.classList.contains("inline");
 
   isSup() {

@@ -5,13 +5,12 @@ import {
   Atom,
   FracAtom,
   GroupAtom,
-  latexToEditableAtom,
   MatrixAtom,
   parse,
   SymAtom,
 } from "euler-tex/src/lib";
 import { latexToBlocks } from "euler-tex/src/parser/textParser";
-import { CharAtom, latexToInlineAtom, TextBlockAtom } from "./atom";
+import { CharAtom, latexToDisplayAtom, latexToInlineAtom } from "./atom";
 import { Caret } from "./caret";
 import { MatrixBuilder, MatrixDestructor } from "./mat";
 import { redo, undo } from "./record";
@@ -20,8 +19,7 @@ import { Builder, Util } from "./util";
 export class EulerEditor extends HTMLElement {
   textarea: HTMLTextAreaElement;
   field: HTMLElement;
-  lines: GroupAtom[] = [];
-  lineIndex = 0;
+  root: GroupAtom = new GroupAtom([]);
   caret: Caret;
   constructor() {
     super();
@@ -50,7 +48,7 @@ export class EulerEditor extends HTMLElement {
     this.caret = new Caret(caret, this.field, {
       focus: this.focus,
       blur: this.blur,
-      render: this.renderLine,
+      render: this.render,
     });
 
     Suggestion.replaceRange = this.caret.replaceRange;
@@ -86,7 +84,7 @@ export class EulerEditor extends HTMLElement {
       }
       const atoms = Array.from(ev.data).map((c) => new CharAtom(c, true));
       this.caret.target.body.splice(this.caret.pos + 1, 0, ...atoms);
-      this.renderLine();
+      this.render();
       this.caret.set(this.caret.target, this.caret.pos + atoms.length);
     });
 
@@ -114,11 +112,8 @@ export class EulerEditor extends HTMLElement {
 
   set = (latex: string) => {
     this.caret.elem.style.height = "0px";
-    this.lines.forEach((elem) => {
-      elem.elem?.remove();
-    });
-    this.lines = [];
-    let texts: Atom[] = [];
+    this.root.elem?.remove();
+    const texts: Atom[] = [];
     latexToBlocks(latex).forEach(({ mode, latex }) => {
       if (mode === "text") {
         const atoms = latex.split("").map((char) => new CharAtom(char));
@@ -129,66 +124,17 @@ export class EulerEditor extends HTMLElement {
         texts.push(latexToInlineAtom(latex));
         return;
       }
-      this.lines.push(Util.parseText(texts));
-      texts = [];
-      const group = latexToEditableAtom(latex, mode);
-      this.lines.push(group);
+      const group = latexToDisplayAtom(latex);
+      texts.push(group);
     });
-    if (texts.length != 0) {
-      this.lines.push(Util.parseText(texts));
-    }
-    if (
-      this.lines.length !== 0 &&
-      !this.lines[this.lines.length - 1].elem?.classList.contains("text")
-    ) {
-      this.lines.push(Util.parseText(texts));
-    }
-
-    this.lines.forEach(({ elem }) => {
-      elem && this.field.insertAdjacentElement("beforeend", elem);
-    });
+    this.root = Util.parseText(texts);
+    this.root.elem &&
+      this.field.insertAdjacentElement("beforeend", this.root.elem);
   };
 
   getLatex = (): string => {
-    return this.lines
-      .map((line) => {
-        if (line.elem?.classList.contains("display")) {
-          return String.raw`\[${Util.serializeGroupAtom(line.body)}\]`;
-        }
-        return Util.serializeGroupAtom(line.body);
-      })
-      .join("");
+    return Util.serializeGroupAtom(this.root.body);
   };
-
-  curLine = () => this.lines[this.lineIndex];
-
-  newDisplay() {
-    this.blur();
-    const atom = latexToEditableAtom("", "display");
-
-    if (this.lineIndex === this.lines.length - 1) {
-      const text = Util.parseText([]);
-      this.lines.splice(this.lineIndex + 1, 0, atom, text);
-      ++this.lineIndex;
-      atom.elem &&
-        text.elem &&
-        this.lines[this.lineIndex - 1].elem?.after(atom.elem, text.elem);
-    } else {
-      this.lines.splice(this.lineIndex + 1, 0, atom);
-      ++this.lineIndex;
-      atom.elem && this.lines[this.lineIndex - 1].elem?.after(atom.elem);
-    }
-    this.caret.set(this.curLine(), 0);
-    this.focus();
-  }
-
-  deleteLine() {
-    this.curLine().elem?.remove();
-    this.lines.splice(this.lineIndex, 1);
-    --this.lineIndex;
-    this.caret.set(this.curLine(), this.curLine().body.length - 1);
-    this.focus();
-  }
 
   input(ev: InputEvent) {
     if (ev.isComposing) return;
@@ -198,12 +144,12 @@ export class EulerEditor extends HTMLElement {
     }
     if (this.caret.isTextMode()) {
       if (ev.data === "[") {
-        this.newDisplay();
+        console.log("[ clicked");
         return;
       }
       if (ev.data === "$") {
         this.caret.insert([latexToInlineAtom("")]);
-        this.renderLine();
+        this.render();
         this.caret.moveLeft();
         this.focus();
         return;
@@ -238,16 +184,10 @@ export class EulerEditor extends HTMLElement {
     Suggestion.reset();
   }
 
-  renderLine = () => {
-    let parent: Atom | null = this.caret.target;
-    //find current lineIndex
-    while (parent.parent !== null) {
-      parent = parent.parent;
-    }
+  render = () => {
     this.blur();
-    this.lineIndex = this.lines.indexOf(parent as GroupAtom);
-    const prev = this.curLine().elem;
-    const elem = this.curLine().toBox().toHtml();
+    const prev = this.root.elem;
+    const elem = this.root.toBox().toHtml();
     if (prev) elem.className = prev.className;
     this.focus();
     elem && prev?.replaceWith(elem);
@@ -287,7 +227,7 @@ export class EulerEditor extends HTMLElement {
         const [rowNum, colNum] = Builder.getCurRowCol(this.caret.target, mat);
         const [newR, newC] = MatrixBuilder.add(mat, rowNum, colNum);
         MatrixBuilder.reset();
-        this.renderLine();
+        this.render();
         this.caret.set(mat.children[newR][newC], 0);
         return;
       }
@@ -308,15 +248,7 @@ export class EulerEditor extends HTMLElement {
       if (Suggestion.view.isOpen()) Suggestion.reset();
       else if (ev.metaKey && ev.shiftKey) this.caret.selectRight();
       else if (ev.shiftKey) this.caret.shiftRight();
-      else if (
-        this.caret.sel === null &&
-        this.caret.target === this.curLine() &&
-        this.caret.pos === this.curLine().body.length - 1 &&
-        this.lineIndex != this.lines.length - 1
-      ) {
-        this.caret.set(this.lines[this.lineIndex + 1], 0);
-        this.lineIndex += 1;
-      } else {
+      else {
         this.blur();
         this.caret.moveRight();
         this.focus();
@@ -335,18 +267,7 @@ export class EulerEditor extends HTMLElement {
       if (Suggestion.view.isOpen()) Suggestion.reset();
       else if (ev.metaKey && ev.shiftKey) this.caret.selectLeft();
       else if (ev.shiftKey) this.caret.shiftLeft();
-      else if (
-        this.caret.sel === null &&
-        this.caret.target === this.curLine() &&
-        this.caret.pos === 0 &&
-        this.lineIndex != 0
-      ) {
-        this.caret.set(
-          this.lines[this.lineIndex - 1],
-          this.lines[this.lineIndex - 1].body.length - 1
-        );
-        this.lineIndex -= 1;
-      } else {
+      else {
         this.blur();
         this.caret.moveLeft();
         this.focus();
@@ -369,18 +290,23 @@ export class EulerEditor extends HTMLElement {
       if (Suggestion.view.isOpen()) {
         this.caret.setSel(null);
         Suggestion.view.down();
-      } else if (!this.caret.moveDown()) {
+      } else if (ev.shiftKey) {
         const prev = this.caret.sel?.[0] ?? this.caret.cur();
-        if (
-          Util.bottom(this.lines[this.lines.length - 1]) <
-          Util.bottom(this.caret.cur()) + 20
-        )
-          return;
-        this.pointAtom([this.caret.x(), Util.bottom(this.caret.cur()) + 20]);
-        if (ev.shiftKey && prev.parent instanceof TextBlockAtom) {
-          this.caret.setSel([prev, this.caret.cur()]);
+        this.caret.pointAtom(
+          this.caret.x(),
+          Util.bottom(this.caret.cur()) + 20,
+          this.caret.target,
+          false
+        );
+        this.caret.setSel([prev, this.caret.cur()]);
+      } else if (!this.caret.moveDown()) {
+        if (this.caret.isDisplayMode()) {
+          this.pointAtom([
+            this.caret.x(),
+            Util.bottom(Util.parentBlock(this.caret.cur())) + 10,
+          ]);
         } else {
-          this.caret.setSel(null);
+          this.pointAtom([this.caret.x(), Util.bottom(this.caret.cur()) + 20]);
         }
         return;
       }
@@ -402,21 +328,23 @@ export class EulerEditor extends HTMLElement {
       if (Suggestion.view.isOpen()) {
         Suggestion.view.up();
         this.caret.setSel(null);
-      } else if (!this.caret.moveUp()) {
+      } else if (ev.shiftKey) {
         const prev = this.caret.sel?.[0] ?? this.caret.cur();
+        this.caret.pointAtom(
+          this.caret.x(),
+          Util.top(this.caret.cur()) - 20,
+          this.caret.target,
+          false
+        );
+        this.caret.setSel([prev, this.caret.cur()]);
+      } else if (!this.caret.moveUp()) {
         if (this.caret.isDisplayMode()) {
           this.pointAtom([
             this.caret.x(),
-            Util.bottom(this.lines[this.lineIndex - 1]) - 10,
+            Util.top(Util.parentBlock(this.caret.cur())) - 10,
           ]);
         } else {
           this.pointAtom([this.caret.x(), Util.top(this.caret.cur()) - 20]);
-        }
-
-        if (ev.shiftKey && prev.parent instanceof TextBlockAtom) {
-          this.caret.setSel([prev, this.caret.cur()]);
-        } else {
-          this.caret.setSel(null);
         }
         return;
       }
@@ -427,16 +355,12 @@ export class EulerEditor extends HTMLElement {
         : undo(this.caret.set, this.caret.setSel);
     }
     if (ev.code == "Backspace") {
-      if (this.curLine().body.length === 1) {
-        if (this.lineIndex !== 0) {
-          this.deleteLine();
-        }
-      } else if (MatrixDestructor.view.isOpen()) {
+      if (MatrixDestructor.view.isOpen()) {
         const mat = this.caret.target.parent as MatrixAtom;
         const [rowNum, colNum] = Builder.getCurRowCol(this.caret.target, mat);
         const [newR, newC] = MatrixDestructor.remove(mat, rowNum, colNum);
         MatrixDestructor.reset();
-        this.renderLine();
+        this.render();
         this.caret.set(mat.children[newR][newC], 0);
         return;
       } else if (this.caret.isMat() && this.caret.isFirst()) {
@@ -456,47 +380,19 @@ export class EulerEditor extends HTMLElement {
     this.pointAtom([ev.clientX, ev.clientY]);
   }
 
-  setLine(newIndex: number, x: number, y: number | null) {
-    this.blur();
-    this.lineIndex = newIndex;
-    if (y) {
-      this.caret.pointAtom(x, y, this.curLine());
-    } else {
-      this.caret.pointAtomHol(x, this.curLine());
-    }
-    this.focus();
-  }
-
   pointAtom(c: [number, number]) {
+    this.blur();
     this.caret.setSel(null);
-    for (const [index, line] of this.lines.entries()) {
-      if (!line.elem) throw new Error("Expect elem");
-      const { bottom } = line.elem.getBoundingClientRect();
-      if (bottom > c[1]) {
-        const rects = Array.from(line.elem.getClientRects());
-        for (const rect of rects) {
-          if (rect.right < c[0] && rect.bottom > c[1] && rect.top < c[1]) {
-            return this.setLine(index, rect.right, rect.top);
-          }
-        }
-        return this.setLine(index, c[0], c[1]);
-      }
-    }
-
-    const lastBlock = this.lines[this.lines.length - 1];
-    return this.caret.set(lastBlock, lastBlock.body.length - 1);
+    if (!this.root.elem) throw new Error("Expect elem");
+    return this.caret.pointAtom(c[0], c[1], this.root, true);
   }
 
   focus = () => {
     if (this.caret.isTextMode()) return;
-    const { elem } = this.curLine();
-    if (!elem) throw new Error("");
-    if (this.caret.isDisplayMode()) {
+    if (this.caret.isDisplayMode() || this.caret.isInlineMode()) {
+      const { elem } = Util.parentBlock(this.caret.cur());
+      if (!elem) throw new Error("");
       elem.classList.add("focus");
-      return;
-    }
-    if (this.caret.isInlineMode()) {
-      this.caret.target.elem?.classList.add("focus");
     }
   };
 

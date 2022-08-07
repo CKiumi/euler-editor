@@ -10,7 +10,13 @@ import {
 } from "euler-tex/src/lib";
 
 export const latexToInlineAtom = (latex: string) => {
-  const atom = new InlineBlockAtom(parse(latex, true));
+  const atom = new MathBlockAtom(parse(latex, true), "inline");
+  atom.toBox().toHtml();
+  return atom;
+};
+
+export const latexToDisplayAtom = (latex: string) => {
+  const atom = new MathBlockAtom(parse(latex, true), "display");
   atom.toBox().toHtml();
   return atom;
 };
@@ -72,12 +78,12 @@ export class TextBlockAtom extends GroupAtom {
   }
 }
 
-export class InlineBlockAtom extends GroupAtom {
+export class MathBlockAtom extends GroupAtom {
   kind: AtomKind = "ord";
   elem: HTMLSpanElement | null = null;
   parent: Atom | null = null;
 
-  constructor(public body: Atom[]) {
+  constructor(public body: Atom[], public mode: "display" | "inline") {
     super(body);
     this.body = [new FirstAtom(), ...body];
   }
@@ -94,7 +100,7 @@ export class InlineBlockAtom extends GroupAtom {
       prevKind = atom.kind;
       return box;
     });
-    return new BlockBox("inline", children, this);
+    return new BlockBox(this.mode, children, this);
   }
 }
 
@@ -105,7 +111,7 @@ export class BlockBox implements Box {
   rect: Rect = { depth: 0, height: 0, width: 0 };
   space: Space = {};
   constructor(
-    public mode: "text" | "inline" | "block",
+    public mode: "text" | "inline" | "display",
     public children: Box[],
     public atom?: Atom,
     public multiplier?: number
