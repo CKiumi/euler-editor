@@ -7,16 +7,31 @@ import {
   parse,
 } from "euler-tex/src/lib";
 import { Util } from "../util";
-import { LETTER1, LETTER2, LETTER3, OP } from "euler-tex/src/parser/command";
+import {
+  AMS_BIN,
+  AMS_MISC,
+  AMS_NBIN,
+  AMS_NREL,
+  AMS_REL,
+  BIN,
+  LETTER1,
+  LETTER2,
+  LETTER3,
+  MISC,
+  OP,
+  REL,
+} from "euler-tex/src/parser/command";
 import { collect, expand } from "euler-engine";
 const BLOCK: [string, string, string][] = [
   ["\\sum", "\\sum^n_{i=1}", "\\sum^n_{i=1}"],
   ["\\int", "\\int^x_y", "\\int^x_y"],
-  [
-    "\\pmatrix",
-    "\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}",
-    "\\begin{pmatrix}&\\\\&\\end{pmatrix}",
-  ],
+  ...["pmatrix", "bmatrix", "vmatrix", "Vmatrix", "Bmatrix"].map((name) => {
+    return [
+      "\\" + name,
+      `\\begin{${name}}a&b\\\\c&d\\end{${name}}`,
+      `\\begin{${name}}&\\\\&\\end{${name}}`,
+    ] as [string, string, string];
+  }),
   ["\\frac", "\\frac{a}{b}", "\\frac{}{}"],
   ["\\sqrt", "\\sqrt{a}", "\\sqrt{}"],
   ["\\overline", "\\overline{a}", "\\overline{}"],
@@ -35,6 +50,14 @@ export module Suggestion {
     ...Object.keys(LETTER1).map((x) => [x, x, x] as [string, string, string]),
     ...Object.keys(LETTER2).map((x) => [x, x, x] as [string, string, string]),
     ...Object.keys(LETTER3).map((x) => [x, x, x] as [string, string, string]),
+    ...Object.keys(MISC).map((x) => [x, x, x] as [string, string, string]),
+    ...Object.keys(BIN).map((x) => [x, x, x] as [string, string, string]),
+    ...Object.keys(REL).map((x) => [x, x, x] as [string, string, string]),
+    ...Object.keys(AMS_MISC).map((x) => [x, x, x] as [string, string, string]),
+    ...Object.keys(AMS_BIN).map((x) => [x, x, x] as [string, string, string]),
+    ...Object.keys(AMS_REL).map((x) => [x, x, x] as [string, string, string]),
+    ...Object.keys(AMS_NBIN).map((x) => [x, x, x] as [string, string, string]),
+    ...Object.keys(AMS_NREL).map((x) => [x, x, x] as [string, string, string]),
     ...OP.map((x) => [x, x, x] as [string, string, string]),
     ...BLOCK,
   ];

@@ -12,11 +12,21 @@ import {
   SymAtom,
 } from "euler-tex/src/lib";
 import {
+  AMS_BIN,
+  AMS_MISC,
+  AMS_NBIN,
+  AMS_NREL,
+  AMS_REL,
+  REL,
+} from "euler-tex/src/parser/command";
+import {
   ACC,
-  BlockOp,
+  BIN,
+  BLOCKOP,
   LETTER1,
   LETTER2,
   LETTER3,
+  MISC,
 } from "euler-tex/src/parser/command";
 import { CharAtom, MathBlockAtom, TextBlockAtom } from "./atom";
 
@@ -173,7 +183,25 @@ export module Util {
       if (result) return result + " ";
       result = Object.keys(LETTER3).find((key) => LETTER3[key] === atom.char);
       if (result) return result + " ";
-      result = Object.keys(BlockOp).find((key) => BlockOp[key] === atom.char);
+      result = Object.keys(MISC).find((key) => MISC[key] === atom.char);
+      if (result) return result + " ";
+      result = Object.keys(BIN).find((key) => BIN[key] === atom.char);
+      if (result) return result + " ";
+      result = Object.keys(REL).find((key) => REL[key] === atom.char);
+      if (result) return result + " ";
+      result = Object.keys(AMS_MISC).find((key) => AMS_MISC[key] === atom.char);
+      if (result) return result + " ";
+      result = Object.keys(AMS_BIN).find((key) => AMS_BIN[key] === atom.char);
+      if (result) return result + " ";
+      result = Object.keys(AMS_REL).find((key) => AMS_REL[key] === atom.char);
+      if (result) return result + " ";
+      result = Object.keys(AMS_NBIN).find((key) => AMS_NBIN[key] === atom.char);
+      if (result) return result + " ";
+      result = Object.keys(AMS_NREL).find((key) => AMS_NREL[key] === atom.char);
+      if (result) return result + " ";
+      result = Object.keys(LETTER3).find((key) => LETTER3[key] === atom.char);
+      if (result) return result + " ";
+      result = Object.keys(BLOCKOP).find((key) => BLOCKOP[key] === atom.char);
       if (result) return result + " ";
       return atom.char;
     }
@@ -205,7 +233,9 @@ export module Util {
       return `${command}{${serializeGroupAtom(atom.body.body)}}`;
     }
     if (atom instanceof LRAtom) {
-      return `\\left(${serializeGroupAtom(atom.body.body)} \\right)`;
+      return `\\left${atom.left.char.replace("∣", "|")}${serializeGroupAtom(
+        atom.body.body
+      )} \\right${atom.right.char.replace("∣", "|")}`;
     }
     if (atom instanceof SupSubAtom) {
       let [sup, sub] = ["", ""];
@@ -224,7 +254,7 @@ export module Util {
           result += " \\\\ ";
         }
       }
-      return `\\begin{pmatrix}${result}\\end{pmatrix}`;
+      return `\\begin{${atom.type}}${result}\\end{${atom.type}}`;
     }
     return "";
   };

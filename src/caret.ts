@@ -64,6 +64,7 @@ export class Caret {
   }
 
   setSel = (sel: [anchlor: Atom, offset: Atom] | null) => {
+    if (sel && sel[0] == sel[1]) return;
     this.selElem.forEach((elem) => elem.remove());
     this.sel = sel;
     if (sel === null) {
@@ -390,11 +391,9 @@ export class Caret {
         atoms: newAtoms,
         skip: true,
       });
-      this.action.render();
-      this.set(this.target, range[0] + newAtoms.length);
+      this.set(this.target, range[0] + newAtoms.length, true);
     } else {
-      this.action.render();
-      this.set(this.target, range[0]);
+      this.set(this.target, range[0], true);
     }
     this.setSel(null);
   };
@@ -430,8 +429,7 @@ export class Caret {
       position: this.pos,
       atoms: [atom],
     });
-    this.set(this.target, this.pos - 1);
-    this.action.render();
+    this.set(this.target, this.pos - 1, true);
   }
 
   toReltiveCoord(coord: [number, number]): [number, number] {
@@ -555,16 +553,16 @@ export class Caret {
     this.renderCaret();
   }
 
-  addPar() {
+  addPar(left: string, right: string) {
     if (this.sel !== null) {
       const range = this.sel.map((x) =>
         (x.parent as GroupAtom).body.indexOf(x)
       );
       const [start, end] = range.sort((a, b) => a - b);
       const body = this.target.body.slice(start + 1, end + 1);
-      this.insert([new LRAtom("(", ")", new GroupAtom(body, true))]);
+      this.insert([new LRAtom(left, right, new GroupAtom(body, true))]);
     } else {
-      this.insert([new LRAtom("(", ")", new GroupAtom([], true))]);
+      this.insert([new LRAtom(left, right, new GroupAtom([], true))]);
       this.moveLeft();
     }
   }

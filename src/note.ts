@@ -166,11 +166,11 @@ export class EulerEditor extends HTMLElement {
     }
 
     Suggestion.reset();
-    if (/^[0-9|,]+/.test(ev.data)) {
+    if (/^[0-9,]+/.test(ev.data)) {
       this.caret.insert(parse(ev.data, true));
     }
 
-    if (/^[+|=]+/.test(ev.data)) {
+    if (/^[+=]+/.test(ev.data)) {
       this.caret.insert([new SymAtom("bin", ev.data, ["Main-R"])]);
     }
     if (ev.data === "-") {
@@ -179,7 +179,11 @@ export class EulerEditor extends HTMLElement {
 
     if (ev.data === "^") this.caret.addSup();
     if (ev.data === "_") this.caret.addSub();
-    if (ev.data === "(") this.caret.addPar();
+    if (ev.data === "(") this.caret.addPar("(", ")");
+    if (ev.data === "{") this.caret.addPar("{", "}");
+    if (ev.data === "[") this.caret.addPar("[", "]");
+    if (ev.data === "|") this.caret.addPar("∣", "∣");
+    console.log(ev.data);
 
     Suggestion.reset();
   }
