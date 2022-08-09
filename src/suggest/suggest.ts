@@ -32,6 +32,16 @@ const BLOCK: [string, string, string][] = [
       `\\begin{${name}}&\\\\&\\end{${name}}`,
     ] as [string, string, string];
   }),
+  [
+    "\\aligned",
+    "\\begin{aligned}a&=b+c\\\\d&=e+f\\end{aligned}",
+    "\\begin{aligned}&=\\\\&=\\end{aligned}",
+  ],
+  [
+    "\\cases",
+    "\\begin{cases}a&=b+c\\\\d&=e+f\\end{cases}",
+    "\\begin{cases}&=\\\\&=\\end{cases}",
+  ],
   ["\\frac", "\\frac{a}{b}", "\\frac{}{}"],
   ["\\sqrt", "\\sqrt{a}", "\\sqrt{}"],
   ["\\overline", "\\overline{a}", "\\overline{}"],

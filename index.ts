@@ -27,7 +27,7 @@ matBuilderBtn!.onclick = () => {
 
 eulerNote.addEventListener("mount", () => {
   eulerNote.set(
-    String.raw`7.1 In this section we consider an evolving metric $\left( g_{ij}\right)_{\tau } =2R_{ij}$ on a manifold $M$; we assume that either $M$ is closed, or $g_{ij} \left(\tau \right)$ are complete and have uniformly bounded curvatures. To each curve $\gamma \left(\tau \right),0 s \tau _{1} \leq \tau \leq \tau _{2}$, we associate its $\mathcal{L}$-length\[\mathcal{L} \left(\gamma \right)=\int _{\tau _{1}}^{\tau _{2}}\sqrt{\tau }\left( R\left(\gamma \left(\tau \right)\right)+s\gamma  \left(\tau \right)s^{2}\right) d\tau \]ss`
+    String.raw`Ok Let's start with the following equation$\begin{Bmatrix}x & \sharp  \\ \spadesuit  & \star \end{Bmatrix}$\[\left(x+y \right)^{2},,x\le y\]This equation can be expanded to (Display mode)\[\left[x^{2}+2\sum _{i= 1}^{n}xy+y^{2} \right]  \]日本語も打てるよ。 inline math-mode $x+y= z$ Multiline editing is also supported now. $\pounds \in C$ aligned is also supported \[ \begin{aligned}x&=a\\&=c+d\end{aligned} \]and also cases \[ \begin{cases}x+y&a<0\\c+d&a\geq0\end{cases} \]!!!`
   );
 });
 const wait = () => new Promise((resolve) => setTimeout(resolve, 400));

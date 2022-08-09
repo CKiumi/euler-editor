@@ -83,6 +83,12 @@ button:hover {
   word-break: break-all;
 }
 
+.align {
+  width: 100%;
+  display: block;
+  text-align: center;
+}
+
 .inline {
   /* prevent to stick with the last text so that unable to point first atom of inline math */
   margin-left: 1px;

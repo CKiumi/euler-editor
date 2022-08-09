@@ -28,7 +28,15 @@ import {
   LETTER3,
   MISC,
 } from "euler-tex/src/parser/command";
-import { CharAtom, MathBlockAtom, TextBlockAtom } from "./atom";
+import { latexToBlocks } from "euler-tex/src/parser/textParser";
+import {
+  CharAtom,
+  latexToAlignAtom,
+  latexToDisplayAtom,
+  latexToInlineAtom,
+  MathBlockAtom,
+  TextBlockAtom,
+} from "./atom";
 
 export module Util {
   export const parentBlock = (atom: Atom): Atom => {
@@ -121,10 +129,26 @@ export module Util {
     return top + (bottom - top) / 2;
   };
 
-  export const parseText = (atoms: Atom[]) => {
-    const atom = new TextBlockAtom(atoms);
-    atom.toBox().toHtml();
-    return atom;
+  export const latexToRoot = (latex: string): Atom[] => {
+    const texts: Atom[] = [];
+    latexToBlocks(latex).forEach(({ mode, latex }) => {
+      if (mode === "text") {
+        const atoms = latex.split("").map((char) => new CharAtom(char));
+        texts.push(...atoms);
+        return;
+      }
+      if (mode === "inline") {
+        texts.push(latexToInlineAtom(latex));
+      }
+      if (mode === "display") {
+        console.log(latex);
+        texts.push(latexToDisplayAtom(latex));
+      }
+      if (mode === "align") {
+        texts.push(latexToAlignAtom(latex));
+      }
+    });
+    return texts;
   };
 
   export const isInBlock = ([x, y]: [number, number], block: HTMLElement) => {
@@ -233,9 +257,11 @@ export module Util {
       return `${command}{${serializeGroupAtom(atom.body.body)}}`;
     }
     if (atom instanceof LRAtom) {
-      return `\\left${atom.left.char.replace("∣", "|")}${serializeGroupAtom(
+      return `\\left${atom.left.char
+        .replace("∣", "|")
+        .replace("{", "\\{")}${serializeGroupAtom(
         atom.body.body
-      )} \\right${atom.right.char.replace("∣", "|")}`;
+      )} \\right${atom.right.char.replace("∣", "|").replace("}", "\\}")}`;
     }
     if (atom instanceof SupSubAtom) {
       let [sup, sub] = ["", ""];

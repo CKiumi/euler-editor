@@ -6,6 +6,7 @@ import {
   FirstAtom,
   getSpacing,
   GroupAtom,
+  HBox,
   parse,
 } from "euler-tex/src/lib";
 
@@ -17,6 +18,14 @@ export const latexToInlineAtom = (latex: string) => {
 
 export const latexToDisplayAtom = (latex: string) => {
   const atom = new MathBlockAtom(parse(latex, true), "display");
+  atom.toBox().toHtml();
+  return atom;
+};
+export const latexToAlignAtom = (latex: string) => {
+  const atom = new MathBlockAtom(
+    parse("\\begin{aligned}" + latex + "\\end{aligned}", true),
+    "display"
+  );
   atom.toBox().toHtml();
   return atom;
 };
@@ -68,7 +77,7 @@ export class TextBlockAtom extends GroupAtom {
     this.body = [new FirstAtom(), ...body];
   }
 
-  toBox(options?: Options): Box {
+  toBox(options?: Options): HBox {
     const children = this.body.map((atom) => {
       const box = atom.toBox(options);
       atom.parent = this;
@@ -88,7 +97,7 @@ export class MathBlockAtom extends GroupAtom {
     this.body = [new FirstAtom(), ...body];
   }
 
-  toBox(options?: Options): Box {
+  toBox(options?: Options): HBox {
     let prevKind: AtomKind | null;
     const children = this.body.map((atom) => {
       const box = atom.toBox(options);
