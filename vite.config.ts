@@ -14,7 +14,8 @@ export default defineConfig({
     coverage: { reportsDirectory: "test/coverage" },
   },
   optimizeDeps: {
-    exclude: ["euler-engine"],
+    //This is necessary to import assets correctly. Oterwise, the path will be wrong, since the codes will be transpled to .vite folder.
+    exclude: ["euler-engine", "euler-tex"],
     esbuildOptions: { target: "es2020" },
   },
 } as UserConfigExport);

@@ -1,10 +1,13 @@
 import { OpAtom } from "euler-tex/src/atom/op";
 import {
   AccentAtom,
+  ArticleAtom,
   Atom,
+  CharAtom,
   FracAtom,
   GroupAtom,
   LRAtom,
+  MathBlockAtom,
   MatrixAtom,
   OverlineAtom,
   SqrtAtom,
@@ -12,37 +15,26 @@ import {
   SymAtom,
 } from "euler-tex/src/lib";
 import {
+  ACC,
   AMS_BIN,
   AMS_MISC,
   AMS_NBIN,
   AMS_NREL,
   AMS_REL,
-  REL,
-} from "euler-tex/src/parser/command";
-import {
-  ACC,
   BIN,
   BLOCKOP,
   LETTER1,
   LETTER2,
   LETTER3,
   MISC,
+  REL,
 } from "euler-tex/src/parser/command";
-import { latexToBlocks } from "euler-tex/src/parser/textParser";
-import {
-  CharAtom,
-  latexToAlignAtom,
-  latexToDisplayAtom,
-  latexToInlineAtom,
-  MathBlockAtom,
-  TextBlockAtom,
-} from "./atom";
 
 export module Util {
   export const parentBlock = (atom: Atom): Atom => {
     let parent = atom.parent;
     while (
-      !(parent instanceof TextBlockAtom) &&
+      !(parent instanceof ArticleAtom) &&
       !(parent instanceof MathBlockAtom)
     ) {
       if (!parent) throw new Error("Parent Expected");
@@ -127,28 +119,6 @@ export module Util {
     }
     const { top, bottom } = atom.elem.getBoundingClientRect();
     return top + (bottom - top) / 2;
-  };
-
-  export const latexToRoot = (latex: string): Atom[] => {
-    const texts: Atom[] = [];
-    latexToBlocks(latex).forEach(({ mode, latex }) => {
-      if (mode === "text") {
-        const atoms = latex.split("").map((char) => new CharAtom(char));
-        texts.push(...atoms);
-        return;
-      }
-      if (mode === "inline") {
-        texts.push(latexToInlineAtom(latex));
-      }
-      if (mode === "display") {
-        console.log(latex);
-        texts.push(latexToDisplayAtom(latex));
-      }
-      if (mode === "align") {
-        texts.push(latexToAlignAtom(latex));
-      }
-    });
-    return texts;
   };
 
   export const isInBlock = ([x, y]: [number, number], block: HTMLElement) => {

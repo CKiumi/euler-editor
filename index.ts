@@ -4,7 +4,7 @@ import { MathLatexToHtml, loadFont } from "euler-tex/src/lib";
 import EulerEditor from "./src/note";
 import { SuggestView } from "./src/suggest/view";
 
-loadFont("/node_modules/euler-tex/woff");
+loadFont("../woff");
 const main = document.getElementById("main");
 [1].forEach(() => {
   main!.innerHTML += `

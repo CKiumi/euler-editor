@@ -1,10 +1,11 @@
-import { CharAtom, MathBlockAtom } from "./atom";
 import {
   Atom,
+  CharAtom,
   FirstAtom,
   FracAtom,
   GroupAtom,
   LRAtom,
+  MathBlockAtom,
   MatrixAtom,
   SupSubAtom,
 } from "euler-tex/src/lib";
@@ -517,8 +518,13 @@ export class Caret {
       })();
       const parent = atom.parent as GroupAtom;
       if (parent) {
-        this.set(parent, parent.body.indexOf(atom));
-        this.renderCaret();
+        if (parent.parent instanceof MatrixAtom) {
+          parent.parent.setGrid(true);
+          this.set(parent, parent.body.indexOf(atom), true);
+        } else {
+          this.set(parent, parent.body.indexOf(atom));
+          this.renderCaret();
+        }
       }
       this.action.focus();
     } else {

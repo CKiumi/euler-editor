@@ -1,12 +1,5 @@
-import { SuggestView } from "./view";
-import {
-  Atom,
-  GroupAtom,
-  latexToEditableAtom,
-  MathLatexToHtml,
-  parse,
-} from "euler-tex/src/lib";
-import { Util } from "../util";
+import { collect, expand } from "euler-engine";
+import { Atom, GroupAtom, MathLatexToHtml, parse } from "euler-tex/src/lib";
 import {
   AMS_BIN,
   AMS_MISC,
@@ -21,7 +14,8 @@ import {
   OP,
   REL,
 } from "euler-tex/src/parser/command";
-import { collect, expand } from "euler-engine";
+import { Util } from "../util";
+import { SuggestView } from "./view";
 const BLOCK: [string, string, string][] = [
   ["\\sum", "\\sum^n_{i=1}", "\\sum^n_{i=1}"],
   ["\\int", "\\int^x_y", "\\int^x_y"],
@@ -53,6 +47,8 @@ const BLOCK: [string, string, string][] = [
     "\\begin{pmatrix}\\\\ \\end{pmatrix}",
   ],
 ];
+
+const MACRO = ["\\bra{}", "\\ket{}", "\\braket{}"];
 export module Suggestion {
   export const view = new SuggestView();
   export let replaceRange: (newAtoms: Atom[], range: [number, number]) => void;
@@ -68,6 +64,7 @@ export module Suggestion {
     ...Object.keys(AMS_REL).map((x) => [x, x, x] as [string, string, string]),
     ...Object.keys(AMS_NBIN).map((x) => [x, x, x] as [string, string, string]),
     ...Object.keys(AMS_NREL).map((x) => [x, x, x] as [string, string, string]),
+    ...MACRO.map((x) => [x, x, x] as [string, string, string]),
     ...OP.map((x) => [x, x, x] as [string, string, string]),
     ...BLOCK,
   ];
@@ -147,9 +144,7 @@ export module EngineSuggestion {
           preview: document.createElement("span"),
           onClick: () => {
             try {
-              insert(
-                latexToEditableAtom(result as string, "inline").body.slice(1)
-              );
+              insert(parse(result as string, true));
             } catch (error) {
               console.log("ENGINE ERROR");
             }

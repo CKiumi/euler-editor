@@ -1,20 +1,18 @@
 import init from "euler-engine";
 import "euler-tex/css/eulertex.css";
 import "euler-tex/css/font.css";
+import { Options } from "euler-tex/src/box/style";
 import {
+  CharAtom,
   FracAtom,
   GroupAtom,
+  latexToArticle,
+  latexToEditableAtoms,
+  MathBlockAtom,
   MatrixAtom,
   parse,
   SymAtom,
 } from "euler-tex/src/lib";
-import {
-  CharAtom,
-  latexToDisplayAtom,
-  latexToInlineAtom,
-  MathBlockAtom,
-  TextBlockAtom,
-} from "./atom";
 import { Caret } from "./caret";
 import { MatrixBuilder, MatrixDestructor } from "./mat";
 import { redo, undo } from "./record";
@@ -40,8 +38,9 @@ export class EulerEditor extends HTMLElement {
     this.field.insertAdjacentElement("beforeend", MatrixDestructor.view.elem);
     this.field.insertAdjacentElement("beforeend", EngineSuggestion.view.elem);
 
-    this.addEventListener("focus", () => {
-      this.textarea.focus({ preventScroll: true });
+    this.addEventListener("focusout", () => {
+      this.caret.setSel(null);
+      this.render();
     });
 
     const caret = document.createElement("div");
@@ -63,7 +62,9 @@ export class EulerEditor extends HTMLElement {
     );
 
     this.addEventListener("pointerdown", (ev) => {
+      ev.preventDefault();
       this.onPointerDown(ev);
+      this.textarea.focus({ preventScroll: true });
     });
     this.addEventListener("pointermove", (ev: PointerEvent) => {
       if (ev.buttons === 1 && ev.timeStamp) {
@@ -80,7 +81,7 @@ export class EulerEditor extends HTMLElement {
       const atoms =
         Util.parentBlock(this.caret.cur()) instanceof MathBlockAtom
           ? parse(latex, true)
-          : Util.latexToRoot(latex);
+          : latexToEditableAtoms(latex);
       this.caret.insert(atoms);
     });
     this.textarea.addEventListener("compositionstart", () => {
@@ -123,8 +124,8 @@ export class EulerEditor extends HTMLElement {
   set = (latex: string) => {
     this.caret.elem.style.height = "0px";
     this.root.elem?.remove();
-    this.root = new TextBlockAtom(Util.latexToRoot(latex)) as GroupAtom;
-    this.root.toBox().toHtml();
+    this.root = latexToArticle(latex);
+    this.root.toBox(new Options()).toHtml();
     this.root.elem &&
       this.field.insertAdjacentElement("beforeend", this.root.elem);
   };
@@ -141,7 +142,10 @@ export class EulerEditor extends HTMLElement {
     }
     if (this.caret.isTextMode()) {
       if (ev.data === "[") {
-        this.caret.insert([latexToDisplayAtom(""), new CharAtom(" ")]);
+        this.caret.insert([
+          new MathBlockAtom(parse("", true), "display"),
+          new CharAtom(" "),
+        ]);
         this.render();
         this.caret.moveLeft();
         this.caret.moveLeft();
@@ -149,7 +153,7 @@ export class EulerEditor extends HTMLElement {
         return;
       }
       if (ev.data === "$") {
-        this.caret.insert([latexToInlineAtom("")]);
+        this.caret.insert([new MathBlockAtom(parse("", true), "inline")]);
         this.render();
         this.caret.moveLeft();
         this.focus();
@@ -192,7 +196,7 @@ export class EulerEditor extends HTMLElement {
   render = () => {
     this.blur();
     const prev = this.root.elem;
-    const elem = this.root.toBox().toHtml();
+    const elem = this.root.toBox(new Options()).toHtml();
     if (prev) elem.className = prev.className;
     this.focus();
     elem && prev?.replaceWith(elem);
