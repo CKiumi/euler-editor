@@ -5,6 +5,7 @@ import EulerEditor from "./src/note";
 import { SuggestView } from "./src/suggest/view";
 
 loadFont("../woff");
+
 const main = document.getElementById("main");
 [1].forEach(() => {
   main!.innerHTML += `

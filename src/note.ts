@@ -18,6 +18,7 @@ import { MatrixBuilder, MatrixDestructor } from "./mat";
 import { redo, undo } from "./record";
 import { EngineSuggestion, Suggestion } from "./suggest/suggest";
 import { Builder, Util } from "./util";
+
 export class EulerEditor extends HTMLElement {
   textarea: HTMLTextAreaElement;
   field: HTMLElement;
@@ -32,7 +33,7 @@ export class EulerEditor extends HTMLElement {
 
     this.textarea = document.createElement("textarea");
     this.textarea.className = "EE_textarea";
-
+    EngineSuggestion.loadSympy();
     this.field.insertAdjacentElement("beforeend", Suggestion.view.elem);
     this.field.insertAdjacentElement("beforeend", MatrixBuilder.view.elem);
     this.field.insertAdjacentElement("beforeend", MatrixDestructor.view.elem);

@@ -1,4 +1,4 @@
-import { collect, expand } from "euler-engine";
+import { collect, expand, latex_to_sympy } from "euler-engine";
 import { Atom, GroupAtom, MathLatexToHtml, parse } from "euler-tex/src/lib";
 import {
   AMS_BIN,
@@ -116,17 +116,44 @@ export module Suggestion {
 
 export module EngineSuggestion {
   export const view = new SuggestView();
+  export let pyodide:
+    | {
+        loadPackage: (arg0: string) => Promise<void>;
+        runPython: (arg0: string) => string;
+      }
+    | undefined = undefined;
+  export const loadSympy = () => {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    loadPyodide().then((p) => {
+      pyodide = p;
+      pyodide?.loadPackage("sympy");
+    });
+  };
+
+  export const trigExpand = (latex: string): string => {
+    return (
+      pyodide?.runPython(`
+      from sympy import *
+      latex((${latex_to_sympy(latex)}).expand(trig=True))`) ?? latex
+    );
+  };
   export let insert: (atoms: Atom[]) => void;
   const candidates: [string, (x: string) => string][] = [
     ["collect", collect],
     ["expand", expand],
+    ["trig expand", trigExpand],
   ];
 
   export const reset = () => {
     view.close();
   };
 
-  export const set = (input: string, position: [left: number, top: number]) => {
+  export const set = async (
+    input: string,
+    position: [left: number, top: number]
+  ) => {
+    await new Promise((resolve) => setTimeout(resolve, 1));
     view.open(position[0], position[1]);
     const list = candidates
       .map(([title, func]) => {
@@ -146,7 +173,7 @@ export module EngineSuggestion {
             try {
               insert(parse(result as string, true));
             } catch (error) {
-              console.log("ENGINE ERROR");
+              console.log("ENGINE ERROR" + error);
             }
           },
         };
