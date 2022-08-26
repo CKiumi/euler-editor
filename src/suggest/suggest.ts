@@ -1,5 +1,10 @@
 import { collect, expand, latex_to_sympy } from "euler-engine";
-import { Atom, MathLatexToHtml, parse } from "euler-tex/src/lib";
+import {
+  Atom,
+  latexToEditableAtoms,
+  MathLatexToHtml,
+  parse,
+} from "euler-tex/src/lib";
 import {
   AMS_BIN,
   AMS_MISC,
@@ -67,6 +72,7 @@ export module Suggestion {
     ...OP.map((x) => [x, x, x] as [string, string, string]),
     ...BLOCK,
   ];
+  const candidates2: [string, string, string][] = [["Equation", "", "\\[\\]"]];
   export let positions: [left: number, top: number] = [0, 0];
   export const init = (onEnter: () => void) => {
     view.input.addEventListener("keydown", (ev) => {
@@ -89,11 +95,14 @@ export module Suggestion {
     view.close();
   };
 
-  export const set = (position: [left: number, top: number]) => {
+  export const set = (
+    position: [left: number, top: number],
+    textMode = false
+  ) => {
     view.open(position[0], position[1]);
     positions = position;
     const text = view.input.value;
-    const list = candidates
+    const list = (textMode ? candidates2 : candidates)
       .filter(([c1]) => distance(c1.replace("\\", ""), text) > 0)
       .sort(
         ([c1], [c2]) =>
@@ -105,7 +114,11 @@ export module Suggestion {
           text: suggested,
           preview: MathLatexToHtml(preview),
           onClick: () => {
-            insert(parse(replaceStr, true));
+            insert(
+              textMode
+                ? latexToEditableAtoms(replaceStr)
+                : parse(replaceStr, true)
+            );
           },
         };
       });

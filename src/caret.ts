@@ -31,6 +31,9 @@ export class Caret {
   x() {
     return Util.right(this.cur());
   }
+  y() {
+    return Util.bottom(this.cur());
+  }
 
   cur() {
     return this.target.body[this.pos];
@@ -518,13 +521,8 @@ export class Caret {
       })();
       const parent = atom.parent as GroupAtom;
       if (parent) {
-        if (parent.parent instanceof MatrixAtom) {
-          parent.parent.setGrid(true);
-          this.set(parent, parent.body.indexOf(atom), true);
-        } else {
-          this.set(parent, parent.body.indexOf(atom));
-          this.renderCaret();
-        }
+        this.set(parent, parent.body.indexOf(atom));
+        this.renderCaret();
       }
       this.action.focus();
     } else {
@@ -574,7 +572,16 @@ export class Caret {
   }
 
   set = (atom: GroupAtom, pos: number, render?: boolean) => {
+    if (this.target.parent instanceof MatrixAtom) {
+      this.target.parent.setGrid(false);
+      render = true;
+    }
     [this.target, this.pos] = [atom, pos];
+    const parent = this.target as GroupAtom;
+    if (parent.parent instanceof MatrixAtom) {
+      parent.parent.setGrid(true);
+      render = true;
+    }
     if (render) this.action.render();
     this.renderCaret();
   };

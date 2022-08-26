@@ -50,6 +50,9 @@ export class EulerEditor extends HTMLElement {
       if (atom instanceof MatrixAtom) {
         this.caret.set(atom.children[0][0], 0);
       }
+      if (atom instanceof MathBlockAtom) {
+        this.caret.moveLeft();
+      }
     });
     this.addEventListener("focusout", () => {
       this.caret.setSel(null);
@@ -154,6 +157,11 @@ export class EulerEditor extends HTMLElement {
       Suggestion.reset();
       return;
     }
+
+    if (ev.data === "\\") {
+      Suggestion.set([this.caret.x(), this.caret.y()], this.caret.isTextMode());
+      return;
+    }
     if (this.caret.isTextMode()) {
       if (ev.data === "[") {
         this.caret.insert([
@@ -175,11 +183,6 @@ export class EulerEditor extends HTMLElement {
       }
       const atom = new CharAtom(ev.data);
       this.caret.insert([atom]);
-      return;
-    }
-
-    if (ev.data === "\\") {
-      Suggestion.set([this.caret.x(), Util.bottom(this.caret.target)]);
       return;
     }
 

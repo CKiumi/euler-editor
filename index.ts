@@ -86,4 +86,3 @@ const testMatBuilder = async () => {
   await wait();
   matBilder.close();
 };
-testSuggest();
