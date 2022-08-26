@@ -1,4 +1,5 @@
 .suggestion {
+  color: #cccccc;
   z-index: 3;
   position: fixed;
   top: 0;
@@ -9,13 +10,13 @@
   border-radius: 3px;
   overflow-y: scroll;
   overscroll-behavior: contain;
+  visibility: hidden;
 }
 
-.suggestion > div {
+.suggestion > .list > div {
   font-size: 13px;
   height: 22px;
   padding: 13px 0px 13px 13px;
-  color: #cccccc;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -29,10 +30,23 @@
   fill: #cccccc;
 }
 
-.suggestion > .focus {
+.suggestion > .list > .focus {
   background-color: rgba(2, 111, 207, 0.662) !important;
 }
 
-.suggestion > div:hover {
+.suggestion > .list > div:hover {
   background-color: rgba(174, 174, 174, 0.12);
+}
+
+.suggestion input {
+  color: #cccccc;
+  margin: 4px auto;
+  width: 98%;
+  display: block;
+  background: rgb(67, 67, 67);
+  border: 1px rgba(2, 111, 207, 0.662) solid;
+}
+
+input[type="text"]:focus {
+  outline: none;
 }

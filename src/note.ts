@@ -18,7 +18,7 @@ import { MatrixBuilder, MatrixDestructor } from "./mat";
 import { redo, undo } from "./record";
 import { EngineSuggestion, Suggestion } from "./suggest/suggest";
 import { Builder, Util } from "./util";
-
+export { loadFont } from "euler-tex/src/lib";
 export class EulerEditor extends HTMLElement {
   textarea: HTMLTextAreaElement;
   field: HTMLElement;
@@ -33,12 +33,24 @@ export class EulerEditor extends HTMLElement {
 
     this.textarea = document.createElement("textarea");
     this.textarea.className = "EE_textarea";
-    EngineSuggestion.loadSympy();
+
     this.field.insertAdjacentElement("beforeend", Suggestion.view.elem);
     this.field.insertAdjacentElement("beforeend", MatrixBuilder.view.elem);
     this.field.insertAdjacentElement("beforeend", MatrixDestructor.view.elem);
     this.field.insertAdjacentElement("beforeend", EngineSuggestion.view.elem);
-
+    Suggestion.init(() => {
+      this.textarea.focus();
+      const atom = this.caret.cur();
+      if (Util.isSingleBody(atom)) {
+        this.caret.moveLeft();
+      }
+      if (atom instanceof FracAtom) {
+        this.caret.moveLeft();
+      }
+      if (atom instanceof MatrixAtom) {
+        this.caret.set(atom.children[0][0], 0);
+      }
+    });
     this.addEventListener("focusout", () => {
       this.caret.setSel(null);
       this.render();
@@ -55,7 +67,7 @@ export class EulerEditor extends HTMLElement {
       render: this.render,
     });
 
-    Suggestion.replaceRange = this.caret.replaceRange;
+    Suggestion.insert = this.caret.insert;
     EngineSuggestion.insert = this.caret.insert;
     this.addEventListener("focus", () => this.textarea.focus());
     this.textarea.addEventListener("input", (ev) =>
@@ -111,6 +123,7 @@ export class EulerEditor extends HTMLElement {
   }
 
   connectedCallback(): void {
+    EngineSuggestion.loadSympy();
     init().then(() => {
       console.log("Wasm initialized!!");
     });
@@ -164,10 +177,15 @@ export class EulerEditor extends HTMLElement {
       this.caret.insert([atom]);
       return;
     }
+
+    if (ev.data === "\\") {
+      Suggestion.set([this.caret.x(), Util.bottom(this.caret.target)]);
+      return;
+    }
+
     if (/^[a-zA-Z*]+/.test(ev.data)) {
       const atoms = parse(ev.data, true);
       this.caret.insert(atoms);
-      Suggestion.set(atoms, [this.caret.x(), Util.bottom(this.caret.target)]);
       return;
     }
 
@@ -189,8 +207,6 @@ export class EulerEditor extends HTMLElement {
     if (ev.data === "{") this.caret.addPar("{", "}");
     if (ev.data === "[") this.caret.addPar("[", "]");
     if (ev.data === "|") this.caret.addPar("∣", "∣");
-    console.log(ev.data);
-
     Suggestion.reset();
   }
 
@@ -212,20 +228,6 @@ export class EulerEditor extends HTMLElement {
     }
     if (ev.code == "Enter" && EngineSuggestion.view.isOpen()) {
       EngineSuggestion.view.select();
-      return;
-    }
-    if (ev.code == "Enter" && Suggestion.buffer.length > 0) {
-      Suggestion.view.select();
-      const atom = this.caret.cur();
-      if (Util.isSingleBody(atom)) {
-        this.caret.moveLeft();
-      }
-      if (atom instanceof FracAtom) {
-        this.caret.moveLeft();
-      }
-      if (atom instanceof MatrixAtom) {
-        this.caret.set(atom.children[0][0], 0);
-      }
       return;
     }
     if (ev.code == "Enter") {
@@ -297,10 +299,7 @@ export class EulerEditor extends HTMLElement {
         return;
       }
 
-      if (Suggestion.view.isOpen()) {
-        this.caret.setSel(null);
-        Suggestion.view.down();
-      } else if (ev.shiftKey) {
+      if (ev.shiftKey) {
         const prev = this.caret.sel?.[0] ?? this.caret.cur();
         this.caret.pointAtom(
           this.caret.x(),
@@ -335,10 +334,7 @@ export class EulerEditor extends HTMLElement {
         return;
       }
 
-      if (Suggestion.view.isOpen()) {
-        Suggestion.view.up();
-        this.caret.setSel(null);
-      } else if (ev.shiftKey) {
+      if (ev.shiftKey) {
         const prev = this.caret.sel?.[0] ?? this.caret.cur();
         this.caret.pointAtom(
           this.caret.x(),

@@ -1,5 +1,5 @@
 import { collect, expand, latex_to_sympy } from "euler-engine";
-import { Atom, GroupAtom, MathLatexToHtml, parse } from "euler-tex/src/lib";
+import { Atom, MathLatexToHtml, parse } from "euler-tex/src/lib";
 import {
   AMS_BIN,
   AMS_MISC,
@@ -14,7 +14,6 @@ import {
   OP,
   REL,
 } from "euler-tex/src/parser/command";
-import { Util } from "../util";
 import { SuggestView } from "./view";
 const BLOCK: [string, string, string][] = [
   ["\\sum", "\\sum^n_{i=1}", "\\sum^n_{i=1}"],
@@ -50,8 +49,8 @@ const BLOCK: [string, string, string][] = [
 
 const MACRO = ["\\bra{}", "\\ket{}", "\\braket{}"];
 export module Suggestion {
-  export const view = new SuggestView();
-  export let replaceRange: (newAtoms: Atom[], range: [number, number]) => void;
+  export const view = new SuggestView(true);
+  export let insert: (atoms: Atom[]) => void;
   const candidates: [string, string, string][] = [
     ...Object.keys(LETTER1).map((x) => [x, x, x] as [string, string, string]),
     ...Object.keys(LETTER2).map((x) => [x, x, x] as [string, string, string]),
@@ -68,17 +67,32 @@ export module Suggestion {
     ...OP.map((x) => [x, x, x] as [string, string, string]),
     ...BLOCK,
   ];
-  export const buffer: Atom[] = [];
-
+  export let positions: [left: number, top: number] = [0, 0];
+  export const init = (onEnter: () => void) => {
+    view.input.addEventListener("keydown", (ev) => {
+      if (ev.code === "Enter") {
+        view.select();
+        onEnter();
+      }
+      if (ev.code === "ArrowUp") {
+        view.up();
+      }
+      if (ev.code === "ArrowDown") {
+        view.down();
+      }
+    });
+    view.input.addEventListener("input", () => {
+      set(positions);
+    });
+  };
   export const reset = () => {
-    buffer.splice(0, buffer.length);
     view.close();
   };
 
-  export const set = (atoms: Atom[], position: [left: number, top: number]) => {
+  export const set = (position: [left: number, top: number]) => {
     view.open(position[0], position[1]);
-    atoms.forEach((atom) => buffer.push(atom));
-    const text = buffer.map((atom) => Util.serialize(atom)).join("");
+    positions = position;
+    const text = view.input.value;
     const list = candidates
       .filter(([c1]) => distance(c1.replace("\\", ""), text) > 0)
       .sort(
@@ -91,16 +105,10 @@ export module Suggestion {
           text: suggested,
           preview: MathLatexToHtml(preview),
           onClick: () => {
-            const start =
-              (buffer[0].parent as GroupAtom).body.indexOf(buffer[0]) - 1;
-            replaceRange(parse(replaceStr, true), [
-              start,
-              start + buffer.length,
-            ]);
+            insert(parse(replaceStr, true));
           },
         };
       });
-    if (list.length === 0) reset();
     view.setList(list);
   };
 
@@ -127,7 +135,9 @@ export module EngineSuggestion {
     // @ts-ignore
     loadPyodide().then((p) => {
       pyodide = p;
-      pyodide?.loadPackage("sympy");
+      pyodide?.loadPackage("sympy").then(() => {
+        pyodide?.runPython("from sympy import *");
+      });
     });
   };
 
@@ -173,7 +183,7 @@ export module EngineSuggestion {
             try {
               insert(parse(result as string, true));
             } catch (error) {
-              console.log("ENGINE ERROR" + error);
+              console.log("ENGINE ERROR");
             }
           },
         };

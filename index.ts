@@ -4,7 +4,7 @@ import { MathLatexToHtml, loadFont } from "euler-tex/src/lib";
 import EulerEditor from "./src/note";
 import { SuggestView } from "./src/suggest/view";
 
-loadFont("../woff");
+loadFont();
 
 const main = document.getElementById("main");
 [1].forEach(() => {
@@ -50,7 +50,7 @@ const testSuggest = async () => {
     onClick: () => console.log("clicked " + text),
   }));
   const main = document.getElementById("main");
-  const autoCompletion = new SuggestView();
+  const autoCompletion = new SuggestView(true);
   main!.append(autoCompletion.elem);
   autoCompletion.open(70, 70);
   autoCompletion.setList([...blockList, ...symbolList]);
@@ -86,3 +86,4 @@ const testMatBuilder = async () => {
   await wait();
   matBilder.close();
 };
+testSuggest();
