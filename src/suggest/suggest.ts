@@ -218,7 +218,7 @@ export module EngineSuggestion {
     ["trig expand", trigExpand],
     ["det", det],
     ["eigenvals", eigen],
-    ["solve", solve],
+    // ["solve", solve],
     ["simplify", simplify],
     ["factor", factor],
   ];
