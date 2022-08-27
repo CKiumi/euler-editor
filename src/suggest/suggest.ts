@@ -1,4 +1,4 @@
-import { collect, expand, latex_to_sympy } from "euler-engine";
+import { latex_to_sympy } from "euler-engine";
 import {
   Atom,
   latexToEditableAtoms,
@@ -153,12 +153,62 @@ export module EngineSuggestion {
       });
     });
   };
-
+  export const collect = (latex: string): string => {
+    return (
+      pyodide?.runPython(`
+      from sympy import *
+      latex((${latex_to_sympy(latex)}).collect(), mat_delim="(")`) ?? latex
+    );
+  };
+  export const expand = (latex: string): string => {
+    return (
+      pyodide?.runPython(`
+      from sympy import *
+      latex((${latex_to_sympy(latex)}).expand(), mat_delim="(")`) ?? latex
+    );
+  };
   export const trigExpand = (latex: string): string => {
     return (
       pyodide?.runPython(`
       from sympy import *
-      latex((${latex_to_sympy(latex)}).expand(trig=True))`) ?? latex
+      latex((${latex_to_sympy(latex)}).expand(trig=True), mat_delim="(")`) ??
+      latex
+    );
+  };
+  export const det = (latex: string): string => {
+    return (
+      pyodide?.runPython(`
+      from sympy import *
+      latex((${latex_to_sympy(latex)}).det(), mat_delim="(")`) ?? latex
+    );
+  };
+  export const solve = (latex: string): string => {
+    return (
+      pyodide?.runPython(`
+      from sympy import *
+      latex(solve(${latex_to_sympy(latex)}, dict=True), mat_delim="(")`) ??
+      latex
+    );
+  };
+  export const eigen = (latex: string): string => {
+    return (
+      pyodide?.runPython(`
+      from sympy import *
+      latex((${latex_to_sympy(latex)}).eigenvals(), mat_delim="(")`) ?? latex
+    );
+  };
+  export const simplify = (latex: string): string => {
+    return (
+      pyodide?.runPython(`
+      from sympy import *
+      latex(simplify(${latex_to_sympy(latex)}), mat_delim="(")`) ?? latex
+    );
+  };
+  export const factor = (latex: string): string => {
+    return (
+      pyodide?.runPython(`
+      from sympy import *
+      latex(factor(${latex_to_sympy(latex)}), mat_delim="(")`) ?? latex
     );
   };
   export let insert: (atoms: Atom[]) => void;
@@ -166,6 +216,11 @@ export module EngineSuggestion {
     ["collect", collect],
     ["expand", expand],
     ["trig expand", trigExpand],
+    ["det", det],
+    ["eigenvals", eigen],
+    ["solve", solve],
+    ["simplify", simplify],
+    ["factor", factor],
   ];
 
   export const reset = () => {

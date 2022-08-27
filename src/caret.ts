@@ -222,7 +222,7 @@ export class Caret {
               if (!mat.parent) return;
               this.set(mat.parent, mat.parent.body.indexOf(mat) - 1);
             } else {
-              this.set(row[column - 1], 0);
+              this.set(row[column - 1], row.length - 1);
             }
           }
         });
