@@ -251,6 +251,13 @@ export class EulerEditor extends HTMLElement {
         MatrixBuilder.set(this.caret.x(), Util.bottom(this.caret.target));
       }
     }
+    if (ev.code == "KeyA" && ev.metaKey) {
+      const atoms = this.root.body;
+      this.caret.set(this.root, atoms.length - 1);
+      this.caret.setSel([atoms[0], atoms[atoms.length - 1]]);
+      return;
+    }
+
     if (ev.code == "ArrowRight") {
       if (MatrixBuilder.view.isOpen()) {
         MatrixBuilder.view.select("right");
@@ -386,6 +393,7 @@ export class EulerEditor extends HTMLElement {
     Suggestion.reset();
     MatrixBuilder.reset();
     MatrixDestructor.reset();
+    this.caret.sel = null;
     this.pointAtom([ev.clientX, ev.clientY]);
   }
 

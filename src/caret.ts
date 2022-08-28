@@ -45,11 +45,6 @@ export class Caret {
     const rect = elem.getBoundingClientRect();
     if (!elem.parentElement) throw new Error("Parent element not found");
     const parentRect = Util.getLineRect(elem, elem.parentElement);
-    const [x, y] = this.toReltiveCoord([rect.x + rect.width, parentRect.y]);
-    if (parentRect.height) {
-      this.elem.style.cssText = `height:${parentRect.height}px; 
-        transform:translate(${x - 1}px,${y}px)`;
-    }
     if (
       this.cur() instanceof MathBlockAtom &&
       (this.cur() as MathBlockAtom).mode === "display"
@@ -57,12 +52,11 @@ export class Caret {
       const [x, y] = this.toReltiveCoord([rect.x + rect.width, rect.y]);
       this.elem.style.cssText = `height:${Util.height(this.cur())}px; 
         transform:translate(${x - 1}px,${y}px)`;
+    } else {
+      const [x, y] = this.toReltiveCoord([rect.x + rect.width, parentRect.y]);
+      this.elem.style.cssText = `height:${parentRect.height}px; 
+        transform:translate(${x - 1}px,${y}px)`;
     }
-    // else {
-    // const [x, y] = this.toReltiveCoord([rect.x + rect.width, rect.y]);
-    // this.elem.style.cssText = `height:${rect.height}px;
-    //   transform:translate(${x - 1}px,${y + 2}px)`;
-    // }
     this.elem.classList.remove("EE_caret");
     this.elem.offsetWidth;
     this.elem.classList.add("EE_caret");
@@ -346,7 +340,10 @@ export class Caret {
     const pos = this.pos;
     let last = 0;
     for (let i = pos; i > 0; i--) {
-      if ((this.target.body[i] as CharAtom).char === "\n") {
+      if (
+        (this.target.body[i] as CharAtom).char === "\n" ||
+        (this.target.body[i] as MathBlockAtom).mode === "display"
+      ) {
         last = i;
         break;
       }
@@ -363,7 +360,10 @@ export class Caret {
     const pos = this.pos;
     let last = this.target.body.length - 1;
     for (let i = pos; i < this.target.body.length; i++) {
-      if ((this.target.body[i] as CharAtom).char === "\n") {
+      if (
+        (this.target.body[i] as CharAtom).char === "\n" ||
+        (this.target.body[i] as MathBlockAtom).mode === "display"
+      ) {
         last = i - 1;
         break;
       }
