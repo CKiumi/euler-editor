@@ -71,8 +71,8 @@ export class Caret {
   }
 
   setSel = (sel: [anchlor: Atom, offset: Atom] | null) => {
-    if (sel && sel[0] == sel[1]) return;
     this.selElem.forEach((elem) => elem.remove());
+    if (sel && sel[0] == sel[1]) return;
     this.sel = sel;
     if (sel === null) {
       EngineSuggestion.reset();
@@ -225,7 +225,7 @@ export class Caret {
               if (!mat.parent) return;
               this.set(mat.parent, mat.parent.body.indexOf(mat) - 1);
             } else {
-              this.set(row[column - 1], row.length - 1);
+              this.set(row[column - 1], row[column - 1].body.length - 1);
             }
           }
         });
@@ -570,9 +570,14 @@ export class Caret {
       );
       const [start, end] = range.sort((a, b) => a - b);
       const body = this.target.body.slice(start + 1, end + 1);
-      this.insert([new LRAtom(left, right, new GroupAtom(body, true))]);
+      console.log(left);
+      this.insert([
+        new LRAtom(left as "(", right as ")", new GroupAtom(body, true)),
+      ]);
     } else {
-      this.insert([new LRAtom(left, right, new GroupAtom([], true))]);
+      this.insert([
+        new LRAtom(left as "(", right as ")", new GroupAtom([], true)),
+      ]);
       this.moveLeft();
     }
   }

@@ -27,9 +27,21 @@ matBuilderBtn!.onclick = () => {
 };
 
 eulerNote.addEventListener("mount", () => {
-  eulerNote.set(
-    String.raw`Ok Let's start with the following equation. You can expand and factor\[\left(x+y \right)^{2},\]The more complicated example:\[\left(\sqrt{x}-\frac{z}{k}\right)^3  \]With trig expand, you can expand\[\sin(x+y)+\cos(x+y)\]\[\sin(x+y)+\cos(x+y)\]日本語も打てるよ。 inline math-mode $x+y= z$ Multiline editing is also supported now. $\pounds \in C$ aligned is also supported \[ \begin{aligned}x&=a\\&=c+d\end{aligned} \]and also cases\[ \begin{cases}x+y&a<0\\c+d&a\geq0\end{cases} \]Matrix calculations are also supported\[\begin{pmatrix}a & b \\ c & d\end{pmatrix}\begin{pmatrix}e & f \\ g & h\end{pmatrix}+\begin{pmatrix}e & f \\ g & h\end{pmatrix}\]!!!`
-  );
+  const jpMath = String.raw`\[\frac{\sqrt{\text{x日本語}}}{\sqrt{\text{にほんご}}}\]`;
+  const aligned = String.raw`\[\begin{aligned}x & = a \\  & = c+d\ \text{(text mode)}\end{aligned}\]`;
+  const align = String.raw`\begin{align}\label{label1} x & = a \\  & \label{label2}= c+d\end{align}`;
+  const align2 = String.raw`\begin{align*} x & = a \\  & = c+d\end{align*}`;
+  const cor = String.raw`\begin{corollary}Corollary environment \[\begin{cases}x+y & a\lt 0 \\ c+d & a\ge 0\end{cases}\]\end{corollary}`;
+  const eqt = String.raw`\begin{equation*}\begin{pmatrix}a & b \\ c & d\end{pmatrix}\begin{pmatrix}e & f \\ g & h\end{pmatrix}+\begin{pmatrix}e & f \\ g & h\end{pmatrix}\end{equation*}`;
+  const eqt2 = String.raw`\begin{equation}a\label{eq2}\end{equation}`;
+  const thm1 = String.raw`\begin{theorem}${align2}\end{theorem}\begin{proof}Proof here ${eqt2}\end{proof}`;
+  const thm2 = String.raw`\begin{theorem}\label{thm2}Second example for Theorem environment\end{theorem}`;
+  const cases = String.raw`\[\begin{cases}x+y & a\lt 0 \\ c+d & a\ge 0\end{cases}\]`;
+  const env = String.raw`\section{Introduction}\subsection{How to insert command }To insert command, type \textbf{backslash}. Ok Let's start with the following equation. You can expand and factor${jpMath}The more complicated example With trig expand, you can expand 日本語も打てるよ。 inline math-mode $x+y= z$ Multiline editing is also supported now. $\pounds \in \mathbb{C}$ aligned is also supported ${aligned} and also cases${cases}and equation number with align (\ref{label1}) (\ref{label2}) (\ref{eq2}) ${align}Matrix calculations are also supported${eqt}\subsection{Ref}\label{subsec} ${cor} \subsubsection{subsub}!!! Theorem \ref{thm2} and Subsection \ref{subsec} (\ref{label2})\section{Advanced}${thm1}${thm2}`;
+  eulerNote.set(env);
+  // eulerNote.set(
+  //   String.raw`Ok Let's start with the following equation. You can expand and factor\[\left(x+y \right)^{2},\]The more complicated example:\[\left(\sqrt{x}-\frac{z}{k}\right)^3  \]With trig expand, you can expand\[\sin(x+y)+\cos(x+y)\]\[\sin(x+y)+\cos(x+y)\]日本語も打てるよ。 inline math-mode $x+y= z$ Multiline editing is also supported now. $\pounds \in C$ aligned is also supported \[ \begin{aligned}x&=a\\&=c+d\end{aligned} \]and also cases\[ \begin{cases}x+y&a<0\\c+d&a\geq0\end{cases} \]Matrix calculations are also supported\[\begin{pmatrix}a & b \\ c & d\end{pmatrix}\begin{pmatrix}e & f \\ g & h\end{pmatrix}+\begin{pmatrix}e & f \\ g & h\end{pmatrix}\]!!!`
+  // );
 });
 
 const wait = () => new Promise((resolve) => setTimeout(resolve, 400));

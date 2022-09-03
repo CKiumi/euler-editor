@@ -7,23 +7,36 @@ import {
   FracAtom,
   GroupAtom,
   latexToArticle,
-  latexToEditableAtoms,
   MathBlockAtom,
   MatrixAtom,
   parse,
+  prarseMath,
+  setLabels,
   SymAtom,
 } from "euler-tex/src/lib";
 import { Caret } from "./caret";
 import { MatrixBuilder, MatrixDestructor } from "./mat";
 import { redo, undo } from "./record";
+import { Builder } from "./suggest/builder";
 import { EngineSuggestion, Suggestion } from "./suggest/suggest";
-import { Builder, Util } from "./util";
+import { Util } from "./util";
 export { loadFont } from "euler-tex/src/lib";
 export class EulerEditor extends HTMLElement {
   textarea: HTMLTextAreaElement;
   field: HTMLElement;
   root: GroupAtom = new GroupAtom([]);
   caret: Caret;
+  fontMode:
+    | "mathbb"
+    | "mathcal"
+    | "mathfrak"
+    | "mathscr"
+    | "mathsf"
+    | "mathtt"
+    | "mathit"
+    | "mathbf"
+    | "mathrm"
+    | null = null;
   constructor() {
     super();
     this.append(document.createElement("template").content.cloneNode(true));
@@ -33,30 +46,34 @@ export class EulerEditor extends HTMLElement {
 
     this.textarea = document.createElement("textarea");
     this.textarea.className = "EE_textarea";
-
     this.field.insertAdjacentElement("beforeend", Suggestion.view.elem);
     this.field.insertAdjacentElement("beforeend", MatrixBuilder.view.elem);
     this.field.insertAdjacentElement("beforeend", MatrixDestructor.view.elem);
     this.field.insertAdjacentElement("beforeend", EngineSuggestion.view.elem);
-    Suggestion.init(() => {
-      this.textarea.focus();
-      const atom = this.caret.cur();
-      if (Util.isSingleBody(atom)) {
-        this.caret.moveLeft();
+    Suggestion.init(
+      () => {
+        this.textarea.focus();
+        const atom = this.caret.cur();
+        if (Util.isSingleBody(atom)) {
+          this.caret.moveLeft();
+        }
+        if (atom instanceof FracAtom) {
+          this.caret.moveLeft();
+        }
+        if (atom instanceof MatrixAtom) {
+          this.caret.set(atom.children[0][0], 0);
+        }
+        if (atom instanceof MathBlockAtom) {
+          this.caret.moveLeft();
+        }
+      },
+      (font) => {
+        this.fontMode = font as "mathbb";
       }
-      if (atom instanceof FracAtom) {
-        this.caret.moveLeft();
-      }
-      if (atom instanceof MatrixAtom) {
-        this.caret.set(atom.children[0][0], 0);
-      }
-      if (atom instanceof MathBlockAtom) {
-        this.caret.moveLeft();
-      }
-    });
+    );
+
     this.addEventListener("focusout", () => {
       this.caret.setSel(null);
-      this.render();
     });
 
     const caret = document.createElement("div");
@@ -80,7 +97,7 @@ export class EulerEditor extends HTMLElement {
     this.addEventListener("pointerdown", (ev) => {
       ev.preventDefault();
       this.onPointerDown(ev);
-      this.textarea.focus({ preventScroll: true });
+      this.textarea.focus();
     });
     this.addEventListener("pointermove", (ev: PointerEvent) => {
       if (ev.buttons === 1 && ev.timeStamp) {
@@ -96,13 +113,12 @@ export class EulerEditor extends HTMLElement {
         : "";
       const atoms =
         Util.parentBlock(this.caret.cur()) instanceof MathBlockAtom
-          ? parse(latex, true)
-          : latexToEditableAtoms(latex);
+          ? prarseMath(latex, true)
+          : parse(latex);
       this.caret.insert(atoms);
     });
     this.textarea.addEventListener("compositionstart", () => {
       this.textarea.value = "";
-      this.textarea.style.transform = this.caret.elem.style.transform;
     });
     this.textarea.addEventListener("compositionupdate", (ev) => {
       while ((this.caret.cur() as CharAtom).composite) {
@@ -133,6 +149,7 @@ export class EulerEditor extends HTMLElement {
     this.setAttribute("tabindex", "0");
     this.insertAdjacentElement("afterbegin", this.textarea);
     this.insertAdjacentElement("beforeend", this.field);
+    this.textarea.focus();
     this.dispatchEvent(
       new Event("mount", { cancelable: false, bubbles: true, composed: true })
     );
@@ -143,8 +160,10 @@ export class EulerEditor extends HTMLElement {
     this.root.elem?.remove();
     this.root = latexToArticle(latex);
     this.root.toBox(new Options()).toHtml();
-    this.root.elem &&
+    if (this.root.elem) {
       this.field.insertAdjacentElement("beforeend", this.root.elem);
+      setLabels(this.root.elem);
+    }
   };
 
   getLatex = (): string => {
@@ -159,7 +178,10 @@ export class EulerEditor extends HTMLElement {
     }
 
     if (ev.data === "\\") {
-      Suggestion.set([this.caret.x(), this.caret.y()], this.caret.isTextMode());
+      Suggestion.textMode = !!this.caret.isTextMode();
+      Suggestion.set([this.caret.x(), this.caret.y()], () => {
+        return;
+      });
       return;
     }
     if (this.caret.isTextMode()) {
@@ -187,29 +209,35 @@ export class EulerEditor extends HTMLElement {
     }
 
     if (/^[a-zA-Z*]+/.test(ev.data)) {
-      const atoms = parse(ev.data, true);
+      if (this.fontMode) {
+        const atoms = prarseMath(`${this.fontMode}{${ev.data}}`, true);
+        this.fontMode = null;
+        this.caret.insert(atoms);
+        return;
+      }
+      const atoms = prarseMath(ev.data, true);
       this.caret.insert(atoms);
       return;
     }
 
     Suggestion.reset();
     if (/^[0-9,<>,.]+/.test(ev.data)) {
-      this.caret.insert(parse(ev.data, true));
+      this.caret.insert(prarseMath(ev.data, true));
     }
 
     if (/^[+=]+/.test(ev.data)) {
-      this.caret.insert([new SymAtom("bin", ev.data, ["Main-R"])]);
+      this.caret.insert([new SymAtom("bin", ev.data, ev.data, ["Main-R"])]);
     }
     if (ev.data === "-") {
-      this.caret.insert([new SymAtom("bin", "−", ["Main-R"])]);
+      this.caret.insert([new SymAtom("bin", "−", "-", ["Main-R"])]);
     }
 
     if (ev.data === "^") this.caret.addSup();
     if (ev.data === "_") this.caret.addSub();
     if (ev.data === "(") this.caret.addPar("(", ")");
-    if (ev.data === "{") this.caret.addPar("{", "}");
+    if (ev.data === "{") this.caret.addPar("\\{", "\\}");
     if (ev.data === "[") this.caret.addPar("[", "]");
-    if (ev.data === "|") this.caret.addPar("∣", "∣");
+    if (ev.data === "|") this.caret.addPar("|", "|");
     Suggestion.reset();
   }
 
@@ -220,9 +248,11 @@ export class EulerEditor extends HTMLElement {
     if (prev) elem.className = prev.className;
     this.focus();
     elem && prev?.replaceWith(elem);
+    setLabels(elem);
   };
 
   onKeyDown(ev: KeyboardEvent) {
+    this.textarea.style.transform = this.caret.elem.style.transform;
     if (ev.isComposing) return;
     if (ev.code == "Enter" && this.caret.isTextMode()) {
       const atom = new CharAtom("\n");

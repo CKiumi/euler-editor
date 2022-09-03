@@ -14,21 +14,7 @@ import {
   SupSubAtom,
   SymAtom,
 } from "euler-tex/src/lib";
-import {
-  ACC,
-  AMS_BIN,
-  AMS_MISC,
-  AMS_NBIN,
-  AMS_NREL,
-  AMS_REL,
-  BIN,
-  BLOCKOP,
-  LETTER1,
-  LETTER2,
-  LETTER3,
-  MISC,
-  REL,
-} from "euler-tex/src/parser/command";
+import { ACC } from "euler-tex/src/parser/command";
 
 export module Util {
   export const parentBlock = (atom: Atom): Atom => {
@@ -165,40 +151,9 @@ export module Util {
 
   export const serialize = (atom: Atom): string => {
     if (atom instanceof CharAtom) {
-      if (atom.char === "&nbsp;") return " ";
-      return atom.char;
+      return atom.char === "&nbsp;" ? " " : atom.char;
     }
-    if (atom instanceof SymAtom) {
-      let result;
-      if (atom.char === "−") return "-";
-      result = Object.keys(LETTER1).find((key) => LETTER1[key] === atom.char);
-      if (result) return result + " ";
-      result = Object.keys(LETTER2).find((key) => LETTER2[key] === atom.char);
-      if (result) return result + " ";
-      result = Object.keys(LETTER3).find((key) => LETTER3[key] === atom.char);
-      if (result) return result + " ";
-      result = Object.keys(MISC).find((key) => MISC[key] === atom.char);
-      if (result) return result + " ";
-      result = Object.keys(BIN).find((key) => BIN[key] === atom.char);
-      if (result) return result + " ";
-      result = Object.keys(REL).find((key) => REL[key] === atom.char);
-      if (result) return result + " ";
-      result = Object.keys(AMS_MISC).find((key) => AMS_MISC[key] === atom.char);
-      if (result) return result + " ";
-      result = Object.keys(AMS_BIN).find((key) => AMS_BIN[key] === atom.char);
-      if (result) return result + " ";
-      result = Object.keys(AMS_REL).find((key) => AMS_REL[key] === atom.char);
-      if (result) return result + " ";
-      result = Object.keys(AMS_NBIN).find((key) => AMS_NBIN[key] === atom.char);
-      if (result) return result + " ";
-      result = Object.keys(AMS_NREL).find((key) => AMS_NREL[key] === atom.char);
-      if (result) return result + " ";
-      result = Object.keys(LETTER3).find((key) => LETTER3[key] === atom.char);
-      if (result) return result + " ";
-      result = Object.keys(BLOCKOP).find((key) => BLOCKOP[key] === atom.char);
-      if (result) return result + " ";
-      return atom.char;
-    }
+    if (atom instanceof SymAtom) return atom.command ?? atom.char;
     if (atom instanceof MathBlockAtom) {
       if (atom.mode === "display") {
         return "\\[" + serializeGroupAtom(atom.body) + "\\]";
@@ -253,55 +208,5 @@ export module Util {
       return `\\begin{${atom.type}}${result}\\end{${atom.type}}`;
     }
     return "";
-  };
-}
-
-export module Builder {
-  export const getCurRowCol = (atom: GroupAtom, mat: MatrixAtom) => {
-    for (const [rowIndex, row] of mat.children.entries()) {
-      const column = row.indexOf(atom);
-      if (column !== -1) return [rowIndex, column];
-    }
-    return [0, 0];
-  };
-
-  export const addRow = (mat: MatrixAtom, pos: number) => {
-    if (pos < 0 || pos > mat.children.length) {
-      throw new Error("Try to add row in invalid position");
-    }
-    const length = Math.max(...mat.children.map((row) => row.length));
-    const newRow = Array(length)
-      .fill(1)
-      .map(() => new GroupAtom([], true));
-    mat.children.splice(pos, 0, newRow);
-  };
-
-  export const addColumn = (mat: MatrixAtom, pos: number) => {
-    const length = Math.max(...mat.children.map((row) => row.length));
-    if (pos < 0 || pos > length) {
-      throw new Error("Try to add column in invalid position");
-    }
-    mat.children.forEach((row) => {
-      row.splice(pos, 0, new GroupAtom([], true));
-    });
-  };
-
-  export const deleteRow = (mat: MatrixAtom, pos: number) => {
-    if (mat.children.length === 1) return;
-    if (pos < 0 || pos > mat.children.length - 1) {
-      throw new Error("Try to add row in invalid position");
-    }
-    mat.children.splice(pos, 1);
-  };
-
-  export const deleteCol = (mat: MatrixAtom, pos: number) => {
-    const length = Math.max(...mat.children.map((row) => row.length));
-    if (length === 1) return;
-    if (pos < 0 || pos > length - 1) {
-      throw new Error("Try to add row in invalid position");
-    }
-    mat.children.forEach((row) => {
-      row.splice(pos, 1);
-    });
   };
 }

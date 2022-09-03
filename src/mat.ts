@@ -1,5 +1,5 @@
 import { MatrixAtom } from "euler-tex/src/lib";
-import { Builder } from "./util";
+import { Builder } from "./suggest/builder";
 
 export class MatBuilderView {
   elem: HTMLDivElement = document.createElement("div");

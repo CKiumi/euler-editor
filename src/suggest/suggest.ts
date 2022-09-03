@@ -1,80 +1,16 @@
 import { latex_to_sympy } from "euler-engine";
-import {
-  Atom,
-  latexToEditableAtoms,
-  MathLatexToHtml,
-  parse,
-} from "euler-tex/src/lib";
-import {
-  AMS_BIN,
-  AMS_MISC,
-  AMS_NBIN,
-  AMS_NREL,
-  AMS_REL,
-  BIN,
-  LETTER1,
-  LETTER2,
-  LETTER3,
-  MISC,
-  OP,
-  REL,
-} from "euler-tex/src/parser/command";
+import { Atom, MathLatexToHtml, parse, prarseMath } from "euler-tex/src/lib";
+import { fontMap } from "euler-tex/src/parser/command";
+import { candidates, candidates2 } from "./data";
 import { SuggestView } from "./view";
-const BLOCK: [string, string, string][] = [
-  ["\\sum", "\\sum^n_{i=1}", "\\sum^n_{i=1}"],
-  ["\\int", "\\int^x_y", "\\int^x_y"],
-  ...["pmatrix", "bmatrix", "vmatrix", "Vmatrix", "Bmatrix"].map((name) => {
-    return [
-      "\\" + name,
-      `\\begin{${name}}a&b\\\\c&d\\end{${name}}`,
-      `\\begin{${name}}&\\\\&\\end{${name}}`,
-    ] as [string, string, string];
-  }),
-  [
-    "\\aligned",
-    "\\begin{aligned}a&=b+c\\\\d&=e+f\\end{aligned}",
-    "\\begin{aligned}&=\\\\&=\\end{aligned}",
-  ],
-  [
-    "\\cases",
-    "\\begin{cases}a&=b+c\\\\d&=e+f\\end{cases}",
-    "\\begin{cases}&=\\\\&=\\end{cases}",
-  ],
-  ["\\frac", "\\frac{a}{b}", "\\frac{}{}"],
-  ["\\sqrt", "\\sqrt{a}", "\\sqrt{}"],
-  ["\\overline", "\\overline{a}", "\\overline{}"],
-  ["\\tilde", "\\tilde{a}", "\\tilde{}"],
-  ["\\mathbb{C}", "\\mathbb{C}", "\\mathbb{C}"],
-  [
-    "\\array",
-    "\\begin{pmatrix}a\\\\b \\end{pmatrix}",
-    "\\begin{pmatrix}\\\\ \\end{pmatrix}",
-  ],
-];
 
-const MACRO = ["\\bra{}", "\\ket{}", "\\braket{}"];
 export module Suggestion {
   export const view = new SuggestView(true);
   export let insert: (atoms: Atom[]) => void;
-  const candidates: [string, string, string][] = [
-    ...Object.keys(LETTER1).map((x) => [x, x, x] as [string, string, string]),
-    ...Object.keys(LETTER2).map((x) => [x, x, x] as [string, string, string]),
-    ...Object.keys(LETTER3).map((x) => [x, x, x] as [string, string, string]),
-    ...Object.keys(MISC).map((x) => [x, x, x] as [string, string, string]),
-    ...Object.keys(BIN).map((x) => [x, x, x] as [string, string, string]),
-    ...Object.keys(REL).map((x) => [x, x, x] as [string, string, string]),
-    ...Object.keys(AMS_MISC).map((x) => [x, x, x] as [string, string, string]),
-    ...Object.keys(AMS_BIN).map((x) => [x, x, x] as [string, string, string]),
-    ...Object.keys(AMS_REL).map((x) => [x, x, x] as [string, string, string]),
-    ...Object.keys(AMS_NBIN).map((x) => [x, x, x] as [string, string, string]),
-    ...Object.keys(AMS_NREL).map((x) => [x, x, x] as [string, string, string]),
-    ...MACRO.map((x) => [x, x, x] as [string, string, string]),
-    ...OP.map((x) => [x, x, x] as [string, string, string]),
-    ...BLOCK,
-  ];
-  const candidates2: [string, string, string][] = [["Equation", "", "\\[\\]"]];
+  // eslint-disable-next-line prefer-const
+  export let textMode = false;
   export let positions: [left: number, top: number] = [0, 0];
-  export const init = (onEnter: () => void) => {
+  export const init = (onEnter: () => void, onClick: (x: string) => void) => {
     view.input.addEventListener("keydown", (ev) => {
       if (ev.code === "Enter") {
         view.select();
@@ -88,7 +24,7 @@ export module Suggestion {
       }
     });
     view.input.addEventListener("input", () => {
-      set(positions);
+      set(positions, onClick);
     });
   };
   export const reset = () => {
@@ -97,7 +33,7 @@ export module Suggestion {
 
   export const set = (
     position: [left: number, top: number],
-    textMode = false
+    onClick: (x: string) => void
   ) => {
     view.open(position[0], position[1]);
     positions = position;
@@ -112,13 +48,12 @@ export module Suggestion {
       .map(([suggested, preview, replaceStr]) => {
         return {
           text: suggested,
-          preview: MathLatexToHtml(preview),
+          preview: MathLatexToHtml(preview, textMode ? "text" : "display")
+            .children[0] as HTMLElement,
           onClick: () => {
-            insert(
-              textMode
-                ? latexToEditableAtoms(replaceStr)
-                : parse(replaceStr, true)
-            );
+            insert(textMode ? parse(replaceStr) : prarseMath(replaceStr));
+            if (Object.keys(fontMap).includes(suggested.slice(1)))
+              onClick(suggested);
           },
         };
       });
@@ -249,7 +184,7 @@ export module EngineSuggestion {
           preview: document.createElement("span"),
           onClick: () => {
             try {
-              insert(parse(result as string, true));
+              insert(prarseMath(result as string, true));
             } catch (error) {
               console.log("ENGINE ERROR");
             }
