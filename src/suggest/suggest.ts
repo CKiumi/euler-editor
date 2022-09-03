@@ -1,6 +1,4 @@
-import { latex_to_sympy } from "euler-engine";
-import { Atom, MathLatexToHtml, parse, prarseMath } from "euler-tex/src/lib";
-import { fontMap } from "euler-tex/src/parser/command";
+import { Atom, MathLatexToHtml } from "euler-tex/src/lib";
 import { candidates, candidates2 } from "./data";
 import { SuggestView } from "./view";
 
@@ -10,31 +8,23 @@ export module Suggestion {
   // eslint-disable-next-line prefer-const
   export let textMode = false;
   export let positions: [left: number, top: number] = [0, 0];
-  export const init = (onEnter: () => void, onClick: (x: string) => void) => {
+  export let onSelected: (name: string, replace: string) => void;
+  export const init = (onClick: (name: string, replace: string) => void) => {
+    onSelected = onClick;
     view.input.addEventListener("keydown", (ev) => {
-      if (ev.code === "Enter") {
-        view.select();
-        onEnter();
-      }
-      if (ev.code === "ArrowUp") {
-        view.up();
-      }
-      if (ev.code === "ArrowDown") {
-        view.down();
-      }
+      if (ev.code === "Enter") view.select();
+      if (ev.code === "ArrowUp") view.up();
+      if (ev.code === "ArrowDown") view.down();
     });
     view.input.addEventListener("input", () => {
-      set(positions, onClick);
+      set(positions);
     });
   };
   export const reset = () => {
     view.close();
   };
 
-  export const set = (
-    position: [left: number, top: number],
-    onClick: (x: string) => void
-  ) => {
+  export const set = (position: [left: number, top: number]) => {
     view.open(position[0], position[1]);
     positions = position;
     const text = view.input.value;
@@ -51,9 +41,7 @@ export module Suggestion {
           preview: MathLatexToHtml(preview, textMode ? "text" : "display")
             .children[0] as HTMLElement,
           onClick: () => {
-            insert(textMode ? parse(replaceStr) : prarseMath(replaceStr));
-            if (Object.keys(fontMap).includes(suggested.slice(1)))
-              onClick(suggested);
+            onSelected(suggested, replaceStr);
           },
         };
       });
@@ -67,131 +55,5 @@ export module Suggestion {
       return 1 - s.indexOf(input) / 100;
     }
     return 0;
-  };
-}
-
-export module EngineSuggestion {
-  export const view = new SuggestView();
-  export let pyodide:
-    | {
-        loadPackage: (arg0: string) => Promise<void>;
-        runPython: (arg0: string) => string;
-      }
-    | undefined = undefined;
-  export const loadSympy = () => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    loadPyodide().then((p) => {
-      pyodide = p;
-      pyodide?.loadPackage("sympy").then(() => {
-        pyodide?.runPython("from sympy import *");
-      });
-    });
-  };
-  export const collect = (latex: string): string => {
-    return (
-      pyodide?.runPython(`
-      from sympy import *
-      latex((${latex_to_sympy(latex)}).collect(), mat_delim="(")`) ?? latex
-    );
-  };
-  export const expand = (latex: string): string => {
-    return (
-      pyodide?.runPython(`
-      from sympy import *
-      latex((${latex_to_sympy(latex)}).expand(), mat_delim="(")`) ?? latex
-    );
-  };
-  export const trigExpand = (latex: string): string => {
-    return (
-      pyodide?.runPython(`
-      from sympy import *
-      latex((${latex_to_sympy(latex)}).expand(trig=True), mat_delim="(")`) ??
-      latex
-    );
-  };
-  export const det = (latex: string): string => {
-    return (
-      pyodide?.runPython(`
-      from sympy import *
-      latex((${latex_to_sympy(latex)}).det(), mat_delim="(")`) ?? latex
-    );
-  };
-  export const solve = (latex: string): string => {
-    return (
-      pyodide?.runPython(`
-      from sympy import *
-      latex(solve(${latex_to_sympy(latex)}, dict=True), mat_delim="(")`) ??
-      latex
-    );
-  };
-  export const eigen = (latex: string): string => {
-    return (
-      pyodide?.runPython(`
-      from sympy import *
-      latex((${latex_to_sympy(latex)}).eigenvals(), mat_delim="(")`) ?? latex
-    );
-  };
-  export const simplify = (latex: string): string => {
-    return (
-      pyodide?.runPython(`
-      from sympy import *
-      latex(simplify(${latex_to_sympy(latex)}), mat_delim="(")`) ?? latex
-    );
-  };
-  export const factor = (latex: string): string => {
-    return (
-      pyodide?.runPython(`
-      from sympy import *
-      latex(factor(${latex_to_sympy(latex)}), mat_delim="(")`) ?? latex
-    );
-  };
-  export let insert: (atoms: Atom[]) => void;
-  const candidates: [string, (x: string) => string][] = [
-    ["collect", collect],
-    ["expand", expand],
-    ["trig expand", trigExpand],
-    ["det", det],
-    ["eigenvals", eigen],
-    // ["solve", solve],
-    ["simplify", simplify],
-    ["factor", factor],
-  ];
-
-  export const reset = () => {
-    view.close();
-  };
-
-  export const set = async (
-    input: string,
-    position: [left: number, top: number]
-  ) => {
-    await new Promise((resolve) => setTimeout(resolve, 1));
-    view.open(position[0], position[1]);
-    const list = candidates
-      .map(([title, func]) => {
-        try {
-          const result = func(input);
-          return result === input ? [title, false] : [title, result];
-        } catch (error) {
-          return [title, false];
-        }
-      })
-      .filter(([, result]) => result !== false)
-      .map(([suggested, result]) => {
-        return {
-          text: suggested as string,
-          preview: document.createElement("span"),
-          onClick: () => {
-            try {
-              insert(prarseMath(result as string, true));
-            } catch (error) {
-              console.log("ENGINE ERROR");
-            }
-          },
-        };
-      });
-    if (list.length === 0) reset();
-    view.setList(list);
   };
 }

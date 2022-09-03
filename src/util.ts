@@ -151,7 +151,9 @@ export module Util {
     const y =
       target.getBoundingClientRect().y +
       target.getBoundingClientRect().height / 2;
+
     for (const rect of rects) {
+      console.log(rect.top, rect.bottom, y);
       if (y > rect.top && y < rect.bottom) {
         return rect;
       }

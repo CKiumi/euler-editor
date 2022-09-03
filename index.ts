@@ -3,7 +3,7 @@ import { MatBuilderView } from "./src/mat";
 import { MathLatexToHtml, loadFont } from "euler-tex/src/lib";
 import EulerEditor from "./src/note";
 import { SuggestView } from "./src/suggest/view";
-
+import "./src/engine/pyodide";
 loadFont();
 
 const main = document.getElementById("main");

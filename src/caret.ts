@@ -10,7 +10,7 @@ import {
   SupSubAtom,
 } from "euler-tex/src/lib";
 import { setRecord } from "./record";
-import { EngineSuggestion } from "./suggest/suggest";
+import { EngineSuggestion } from "./engine";
 import { Util } from "./util";
 
 export type Sel = [anchor: number, offset: number];
@@ -44,6 +44,7 @@ export class Caret {
     if (!elem) throw new Error("Element not found in current pointed atom");
     const rect = elem.getBoundingClientRect();
     if (!elem.parentElement) throw new Error("Parent element not found");
+    console.log(elem, elem.parentElement);
     const parentRect = Util.getLineRect(elem, elem.parentElement);
     if (
       this.cur() instanceof MathBlockAtom &&

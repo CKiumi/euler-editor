@@ -14,11 +14,13 @@ import {
   setLabels,
   SymAtom,
 } from "euler-tex/src/lib";
+import { fontMap } from "euler-tex/src/parser/command";
 import { Caret } from "./caret";
+import { EngineSuggestion } from "./engine";
 import { MatrixBuilder, MatrixDestructor } from "./mat";
 import { redo, undo } from "./record";
 import { Builder } from "./suggest/builder";
-import { EngineSuggestion, Suggestion } from "./suggest/suggest";
+import { Suggestion } from "./suggest/suggest";
 import { Util } from "./util";
 export { loadFont } from "euler-tex/src/lib";
 export class EulerEditor extends HTMLElement {
@@ -50,27 +52,28 @@ export class EulerEditor extends HTMLElement {
     this.field.insertAdjacentElement("beforeend", MatrixBuilder.view.elem);
     this.field.insertAdjacentElement("beforeend", MatrixDestructor.view.elem);
     this.field.insertAdjacentElement("beforeend", EngineSuggestion.view.elem);
-    Suggestion.init(
-      () => {
-        this.textarea.focus();
-        const atom = this.caret.cur();
-        if (Util.isSingleBody(atom)) {
-          this.caret.moveLeft();
-        }
-        if (atom instanceof FracAtom) {
-          this.caret.moveLeft();
-        }
-        if (atom instanceof MatrixAtom) {
-          this.caret.set(atom.children[0][0], 0);
-        }
-        if (atom instanceof MathBlockAtom) {
-          this.caret.moveLeft();
-        }
-      },
-      (font) => {
+    Suggestion.init((font, replace) => {
+      this.textarea.focus();
+      if (font in fontMap) {
         this.fontMode = font as "mathbb";
+        return;
       }
-    );
+      this.caret.insert(
+        this.caret.isTextMode() ? parse(replace) : prarseMath(replace)
+      );
+      const atom = this.caret.cur();
+      if (
+        Util.isSingleBody(atom) ||
+        atom instanceof FracAtom ||
+        atom instanceof MathBlockAtom
+      ) {
+        this.caret.moveLeft();
+      }
+
+      if (atom instanceof MatrixAtom) {
+        this.caret.set(atom.children[0][0], 0);
+      }
+    });
 
     this.addEventListener("focusout", () => {
       this.caret.setSel(null);
@@ -88,7 +91,9 @@ export class EulerEditor extends HTMLElement {
     });
 
     Suggestion.insert = this.caret.insert;
-    EngineSuggestion.insert = this.caret.insert;
+    EngineSuggestion.init(async (sympyFn) => {
+      this.caret.insert(prarseMath(await sympyFn));
+    });
     this.addEventListener("focus", () => this.textarea.focus());
     this.textarea.addEventListener("input", (ev) =>
       this.input(ev as InputEvent)
@@ -142,7 +147,7 @@ export class EulerEditor extends HTMLElement {
   }
 
   connectedCallback(): void {
-    EngineSuggestion.loadSympy();
+    // EngineSuggestion.loadSympy();
     init().then(() => {
       console.log("Wasm initialized!!");
     });
@@ -179,9 +184,7 @@ export class EulerEditor extends HTMLElement {
 
     if (ev.data === "\\") {
       Suggestion.textMode = !!this.caret.isTextMode();
-      Suggestion.set([this.caret.x(), this.caret.y()], () => {
-        return;
-      });
+      Suggestion.set([this.caret.x(), this.caret.y()]);
       return;
     }
     if (this.caret.isTextMode()) {
