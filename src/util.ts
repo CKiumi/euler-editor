@@ -10,6 +10,7 @@ import {
   MathBlockAtom,
   MatrixAtom,
   OverlineAtom,
+  SectionAtom,
   SqrtAtom,
   SupSubAtom,
   SymAtom,
@@ -64,6 +65,27 @@ export module Util {
     );
   };
 
+  export const isBlockAtom = (
+    atom: Atom
+  ): atom is MathBlockAtom | SectionAtom | MatrixAtom | ArticleAtom => {
+    return (
+      atom instanceof MathBlockAtom ||
+      atom instanceof SectionAtom ||
+      atom instanceof MatrixAtom ||
+      atom instanceof ArticleAtom
+    );
+  };
+
+  export const isSingleBlock = (
+    atom: Atom
+  ): atom is MathBlockAtom | SectionAtom | ArticleAtom => {
+    return (
+      atom instanceof MathBlockAtom ||
+      atom instanceof SectionAtom ||
+      atom instanceof ArticleAtom
+    );
+  };
+
   export const right = (atom: Atom): number => {
     if (!atom.elem) {
       throw new Error("Try to get rect of atom with no element linked");
@@ -90,6 +112,18 @@ export module Util {
       throw new Error("Try to get rect of atom with no element linked");
     }
     return atom.elem.getBoundingClientRect().bottom;
+  };
+
+  export const isInRect = (
+    atom: Atom,
+    coord: [x: number, y: number]
+  ): boolean => {
+    if (!atom.elem) {
+      throw new Error("Try to get rect of atom with no element linked");
+    }
+    const [x, y] = coord;
+    const { top, bottom, right, left } = atom.elem.getBoundingClientRect();
+    return top < y && bottom > y && right > x && left < x;
   };
 
   export const height = (atom: Atom): number => {

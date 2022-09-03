@@ -150,7 +150,7 @@ export class Caret {
     if (this.isLast()) {
       if (this.isSup() || this.isSub()) {
         this.exitSupSub("right");
-      } else if (this.target instanceof MathBlockAtom) {
+      } else if (Util.isSingleBlock(this.target)) {
         const newAtom = this.target.parent as GroupAtom;
         this.set(newAtom, newAtom.body.indexOf(this.target));
       } else if (this.isNumer() || this.isDenom()) {
@@ -184,7 +184,7 @@ export class Caret {
         } else {
           throw new Error("SupSubAtom must have sup or sub");
         }
-      } else if (cur instanceof MathBlockAtom) {
+      } else if (Util.isSingleBlock(cur)) {
         this.set(cur, 0);
       } else if (Util.isSingleBody(cur)) {
         this.set(cur.body, 0);
@@ -210,8 +210,9 @@ export class Caret {
       } else if (this.isNumer() || this.isDenom()) {
         this.exitFrac();
         this.set(this.target, this.pos - 1);
-      } else if (this.target instanceof MathBlockAtom) {
+      } else if (Util.isSingleBlock(this.target)) {
         const newAtom = this.target.parent as GroupAtom;
+        if (!newAtom) return;
         this.set(newAtom, newAtom.body.indexOf(this.target) - 1);
       } else if (this.isBody()) {
         this.exitBody("left");
@@ -241,7 +242,7 @@ export class Caret {
         }
       } else if (cur instanceof FracAtom) {
         this.set(cur.numer, cur.numer.body.length - 1);
-      } else if (cur instanceof MathBlockAtom) {
+      } else if (Util.isSingleBlock(cur)) {
         this.set(cur, cur.body.length - 1);
       } else if (Util.isSingleBody(cur)) {
         this.set(cur.body, cur.body.body.length - 1);
@@ -467,17 +468,14 @@ export class Caret {
     if (this.isTextMode() && Util.bottom(group) < y) {
       return this.set(group, group.body.length - 1);
     }
-    if (this.isTextMode() && Util.top(group) > y) {
-      return;
-    }
+    if (this.isTextMode() && Util.top(group) > y) return;
     if (!group.elem) throw new Error("Expect elem");
     const { bottom } = group.elem.getBoundingClientRect();
     if (bottom > y) {
       const rects = Array.from(group.elem.getClientRects());
       for (const rect of rects) {
         if (rect.right < x && rect.bottom > y && rect.top < y) {
-          x = rect.right;
-          y = rect.top;
+          [x, y] = [rect.right, rect.top];
         }
       }
     }
@@ -494,13 +492,8 @@ export class Caret {
         [Util.right(atom), Util.yCenter(atom)],
         [x, y]
       );
-      if (atom instanceof MathBlockAtom) {
-        if (
-          Util.top(atom) < y &&
-          Util.bottom(atom) > y &&
-          Util.right(atom) > x &&
-          Util.left(atom) < x
-        ) {
+      if (Util.isBlockAtom(atom)) {
+        if (Util.isInRect(atom, [x, y])) {
           i = index;
           break;
         }
@@ -597,7 +590,14 @@ export class Caret {
     this.renderCaret();
   };
 
-  isTextMode = () => this.target.elem?.classList.contains("text");
+  isTextMode = () => {
+    const { elem } = this.target;
+    return (
+      elem?.classList.contains("text") ||
+      elem?.classList.contains("theorem") ||
+      elem?.classList.contains("section")
+    );
+  };
   isDisplayMode = () => {
     const parent = Util.parentBlock(this.cur());
     return parent instanceof MathBlockAtom && parent.mode === "display";
