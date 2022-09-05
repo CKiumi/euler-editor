@@ -6,6 +6,8 @@
     "dev": "vite",
     "test": "vitest",
     "e2e": "playwright test",
+    "report": "playwright show-report test/e2e/report",
+    "record": "playwright codegen http://localhost:5173",
     "e2e:update": "playwright test --update-snapshots",
     "coverage": "vitest run --coverage",
     "test:all": "tsc --noEmit && eslint . && vitest && playwright test",
@@ -20,7 +22,7 @@
     "euler-tex": "./pkg/euler-tex-v0.5.7.tgz"
   },
   "devDependencies": {
-    "@playwright/test": "^1.21.1",
+    "@playwright/test": "^1.25.1",
     "@types/katex": "^0.14.0",
     "@types/node": "^17.0.31",
     "@typescript-eslint/eslint-plugin": "^5.22.0",
