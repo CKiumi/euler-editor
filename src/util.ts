@@ -1,57 +1,32 @@
 import { OpAtom } from "euler-tex/src/atom/op";
 import {
   AccentAtom,
-  ArticleAtom,
+  Article,
   Atom,
   CharAtom,
+  DisplayAtom,
   FracAtom,
-  GroupAtom,
+  InlineAtom,
   LRAtom,
-  MathBlockAtom,
   MatrixAtom,
   OverlineAtom,
   SectionAtom,
   SqrtAtom,
   SupSubAtom,
   SymAtom,
+  ThmAtom,
 } from "euler-tex/src/lib";
 import { ACC } from "euler-tex/src/parser/command";
 
 export module Util {
   export const parentBlock = (atom: Atom): Atom => {
+    if (atom instanceof Article) return atom;
     let parent = atom.parent;
-    while (
-      !(parent instanceof ArticleAtom) &&
-      !(parent instanceof MathBlockAtom)
-    ) {
-      if (!parent) throw new Error("Parent Expected");
+    while (parent && !isBlockAtom(parent)) {
       parent = parent.parent;
     }
+    if (!parent) throw new Error("Parent Expected");
     return parent;
-  };
-
-  export const children = (atom: Atom): Atom[] => {
-    if (atom instanceof GroupAtom || atom instanceof MathBlockAtom) {
-      return atom.body.flatMap((atom) => children(atom));
-    } else if (atom instanceof SupSubAtom) {
-      const nucs = children(atom.nuc);
-      nucs.pop();
-      return [
-        ...nucs,
-        ...(atom.sup ? children(atom.sup) : []),
-        ...(atom.sub ? children(atom.sub) : []),
-        atom,
-      ];
-    } else if (atom instanceof FracAtom) {
-      return [...children(atom.denom), ...children(atom.numer), atom];
-    } else if (isSingleBody(atom)) {
-      return [...children(atom.body), atom];
-    } else if (atom instanceof MatrixAtom) {
-      const rows = atom.children.flatMap((row) =>
-        row.flatMap((group) => children(group))
-      );
-      return [...rows, atom];
-    } else return [atom];
   };
 
   export const isSingleBody = (
@@ -67,22 +42,30 @@ export module Util {
 
   export const isBlockAtom = (
     atom: Atom
-  ): atom is MathBlockAtom | SectionAtom | MatrixAtom | ArticleAtom => {
+  ): atom is
+    | InlineAtom
+    | ThmAtom
+    | DisplayAtom
+    | SectionAtom
+    | MatrixAtom
+    | Article => {
     return (
-      atom instanceof MathBlockAtom ||
+      atom instanceof InlineAtom ||
+      atom instanceof DisplayAtom ||
       atom instanceof SectionAtom ||
       atom instanceof MatrixAtom ||
-      atom instanceof ArticleAtom
+      atom instanceof ThmAtom ||
+      atom instanceof Article
     );
   };
 
   export const isSingleBlock = (
     atom: Atom
-  ): atom is MathBlockAtom | SectionAtom | ArticleAtom => {
+  ): atom is InlineAtom | SectionAtom | Article => {
     return (
-      atom instanceof MathBlockAtom ||
+      atom instanceof InlineAtom ||
       atom instanceof SectionAtom ||
-      atom instanceof ArticleAtom
+      atom instanceof Article
     );
   };
 
@@ -153,7 +136,6 @@ export module Util {
       target.getBoundingClientRect().height / 2;
 
     for (const rect of rects) {
-      console.log(rect.top, rect.bottom, y);
       if (y > rect.top && y < rect.bottom) {
         return rect;
       }
@@ -190,13 +172,11 @@ export module Util {
       return atom.char === "&nbsp;" ? " " : atom.char;
     }
     if (atom instanceof SymAtom) return atom.command ?? atom.char;
-    if (atom instanceof MathBlockAtom) {
-      if (atom.mode === "display") {
-        return "\\[" + serializeGroupAtom(atom.body) + "\\]";
-      } else {
-        return "$" + serializeGroupAtom(atom.body) + "$";
-      }
-    }
+    if (atom instanceof InlineAtom)
+      return "$" + serializeGroupAtom(atom.body) + "$";
+    if (atom instanceof DisplayAtom)
+      return "\\[" + serialize(atom.body) + "\\]";
+
     if (atom instanceof OpAtom) {
       return "\\" + atom.body + " ";
     }
@@ -218,11 +198,11 @@ export module Util {
       return `${command}{${serializeGroupAtom(atom.body.body)}}`;
     }
     if (atom instanceof LRAtom) {
-      return `\\left${atom.left.char
+      return `\\left${atom.left
         .replace("∣", "|")
         .replace("{", "\\{")}${serializeGroupAtom(
         atom.body.body
-      )} \\right${atom.right.char.replace("∣", "|").replace("}", "\\}")}`;
+      )} \\right${atom.right.replace("∣", "|").replace("}", "\\}")}`;
     }
     if (atom instanceof SupSubAtom) {
       let [sup, sub] = ["", ""];
@@ -233,9 +213,9 @@ export module Util {
     if (atom instanceof MatrixAtom) {
       let result = "";
       for (let row = 0; row < atom.children.length; row++) {
-        for (let col = 0; col < atom.children[row].length; col++) {
+        for (let col = 0; col < atom.rows[row].length; col++) {
           if (col > 0) result += " & ";
-          result += serializeGroupAtom(atom.children[row][col].body);
+          result += serializeGroupAtom(atom.rows[row][col].body);
         }
         if (row < atom.children.length - 1) {
           result += " \\\\ ";

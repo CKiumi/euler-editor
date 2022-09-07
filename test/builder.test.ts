@@ -8,44 +8,14 @@ import {
   OverlineAtom,
   SqrtAtom,
   SymAtom,
-  GroupAtom,
-  FirstAtom,
+  MathGroup,
 } from "euler-tex/src/lib";
 import { Util } from "../src/util";
 import { Builder } from "../src/suggest/builder";
 
-test("children", () => {
-  const j = new SymAtom("ord", "j", "j", ["Math-I"]);
-  const group = new GroupAtom([j], true);
-  const f = new FirstAtom();
-
-  expect(Util.children(j)).toStrictEqual([j]);
-  const accent = new SymAtom("ord", "^", "^", ["Main-R"]);
-  const accAtom = new AccentAtom(group, accent);
-  expect(Util.children(accAtom)).toStrictEqual([f, j, accAtom]);
-  const olAtom = new OverlineAtom(group);
-  expect(Util.children(olAtom)).toStrictEqual([f, j, olAtom]);
-  const lrAtom = new LRAtom("(", ")", group);
-  expect(Util.children(lrAtom)).toStrictEqual([f, j, lrAtom]);
-  const sqrtAtom = new SqrtAtom(group);
-  expect(Util.children(sqrtAtom)).toStrictEqual([f, j, sqrtAtom]);
-  const fracAtom = new FracAtom(group, group);
-  expect(Util.children(fracAtom)).toStrictEqual([f, j, f, j, fracAtom]);
-  const mat = new MatrixAtom(
-    [
-      [group, group],
-      [group, group],
-    ],
-    "pmatrix"
-  );
-  expect(Util.children(mat)).toStrictEqual([f, j, f, j, f, j, f, j, mat]);
-  const supsubatom = new SupSubAtom(j, group, group);
-  expect(Util.children(supsubatom)).toStrictEqual([f, j, f, j, supsubatom]);
-});
-
 test("serialize", () => {
   const j = new SymAtom("ord", "j", "j", ["Math-I"]);
-  const group = new GroupAtom([j], true);
+  const group = new MathGroup([j]);
   expect(Util.serialize(j)).toStrictEqual("j");
   const accent = new SymAtom("ord", "^", "^", ["Main-R"]);
   const accAtom = new AccentAtom(group, accent);
@@ -75,8 +45,8 @@ test("serialize", () => {
 
 test("matrix builder", () => {
   const j = new SymAtom("ord", "j", "j", ["Math-I"]);
-  const group = new GroupAtom([j], true);
-  const targetGroup = new GroupAtom([j], true);
+  const group = new MathGroup([j]);
+  const targetGroup = new MathGroup([j]);
   const mat = new MatrixAtom(
     [
       [group, group],
@@ -94,36 +64,36 @@ test("matrix builder", () => {
     new MatrixAtom([
       [group, group],
       [group, group],
-      [new GroupAtom([], true), new GroupAtom([], true)],
+      [new MathGroup([]), new MathGroup([])],
     ])
   );
   Builder.addRow(mat, 0);
   expect(mat).toEqual(
     new MatrixAtom([
-      [new GroupAtom([], true), new GroupAtom([], true)],
+      [new MathGroup([]), new MathGroup([])],
       [group, group],
       [group, group],
-      [new GroupAtom([], true), new GroupAtom([], true)],
+      [new MathGroup([]), new MathGroup([])],
     ])
   );
   Builder.addRow(mat, 1);
   expect(mat).toEqual(
     new MatrixAtom([
-      [new GroupAtom([], true), new GroupAtom([], true)],
-      [new GroupAtom([], true), new GroupAtom([], true)],
+      [new MathGroup([]), new MathGroup([])],
+      [new MathGroup([]), new MathGroup([])],
       [group, group],
       [group, group],
-      [new GroupAtom([], true), new GroupAtom([], true)],
+      [new MathGroup([]), new MathGroup([])],
     ])
   );
 
   Builder.deleteRow(mat, 0);
   expect(mat).toEqual(
     new MatrixAtom([
-      [new GroupAtom([], true), new GroupAtom([], true)],
+      [new MathGroup([]), new MathGroup([])],
       [group, group],
       [group, group],
-      [new GroupAtom([], true), new GroupAtom([], true)],
+      [new MathGroup([]), new MathGroup([])],
     ])
   );
   const mat2 = new MatrixAtom([
@@ -133,8 +103,8 @@ test("matrix builder", () => {
   Builder.addColumn(mat2, 2);
   expect(mat2).toEqual(
     new MatrixAtom([
-      [group, group, new GroupAtom([], true)],
-      [targetGroup, group, new GroupAtom([], true)],
+      [group, group, new MathGroup([])],
+      [targetGroup, group, new MathGroup([])],
     ])
   );
   Builder.deleteCol(mat2, 2);

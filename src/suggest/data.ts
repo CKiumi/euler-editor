@@ -5,7 +5,7 @@ import {
   AMS_NREL,
   AMS_REL,
   BIN,
-  fontMap,
+  FontMap,
   LETTER1,
   LETTER2,
   LETTER3,
@@ -38,7 +38,7 @@ const BLOCK: [string, string, string][] = [
   ["\\sqrt", "\\sqrt{a}", "\\sqrt{}"],
   ["\\overline", "\\overline{a}", "\\overline{}"],
   ["\\tilde", "\\tilde{a}", "\\tilde{}"],
-  ...Object.keys(fontMap).map(
+  ...Object.keys(FontMap).map(
     (font) => [font, `${font}{A}-${font}{Z}`, ""] as [string, string, string]
   ),
   [

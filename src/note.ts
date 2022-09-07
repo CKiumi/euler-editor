@@ -3,18 +3,21 @@ import "euler-tex/css/eulertex.css";
 import "euler-tex/css/font.css";
 import { Options } from "euler-tex/src/box/style";
 import {
+  Article,
   CharAtom,
+  DisplayAtom,
   FracAtom,
   GroupAtom,
+  InlineAtom,
   latexToArticle,
-  MathBlockAtom,
+  MathGroup,
   MatrixAtom,
   parse,
   prarseMath,
   setLabels,
   SymAtom,
 } from "euler-tex/src/lib";
-import { fontMap } from "euler-tex/src/parser/command";
+import { FontMap } from "euler-tex/src/parser/command";
 import { Caret } from "./caret";
 import { EngineSuggestion } from "./engine";
 import { MatrixBuilder, MatrixDestructor } from "./mat";
@@ -26,7 +29,7 @@ export { loadFont } from "euler-tex/src/lib";
 export class EulerEditor extends HTMLElement {
   textarea: HTMLTextAreaElement;
   field: HTMLElement;
-  root: GroupAtom = new GroupAtom([]);
+  root: GroupAtom = new Article([]);
   caret: Caret;
   fontMode:
     | "mathbb"
@@ -54,7 +57,7 @@ export class EulerEditor extends HTMLElement {
     this.field.insertAdjacentElement("beforeend", EngineSuggestion.view.elem);
     Suggestion.init((font, replace) => {
       this.textarea.focus();
-      if (font in fontMap) {
+      if (font in FontMap) {
         this.fontMode = font as "mathbb";
         return;
       }
@@ -65,13 +68,13 @@ export class EulerEditor extends HTMLElement {
       if (
         Util.isSingleBody(atom) ||
         atom instanceof FracAtom ||
-        atom instanceof MathBlockAtom
+        atom instanceof InlineAtom
       ) {
         this.caret.moveLeft();
       }
 
       if (atom instanceof MatrixAtom) {
-        this.caret.set(atom.children[0][0], 0);
+        this.caret.set(atom.rows[0][0], 0);
       }
     });
 
@@ -89,7 +92,7 @@ export class EulerEditor extends HTMLElement {
       blur: this.blur,
       render: this.render,
     });
-
+    this.caret.target = this.root;
     Suggestion.insert = this.caret.insert;
     EngineSuggestion.init(async (sympyFn) => {
       this.caret.insert(prarseMath(await sympyFn));
@@ -117,7 +120,7 @@ export class EulerEditor extends HTMLElement {
         ? ev.clipboardData.getData("text/plain")
         : "";
       const atoms =
-        Util.parentBlock(this.caret.cur()) instanceof MathBlockAtom
+        Util.parentBlock(this.caret.cur()) instanceof InlineAtom
           ? prarseMath(latex, true)
           : parse(latex);
       this.caret.insert(atoms);
@@ -126,22 +129,26 @@ export class EulerEditor extends HTMLElement {
       this.textarea.value = "";
     });
     this.textarea.addEventListener("compositionupdate", (ev) => {
-      while ((this.caret.cur() as CharAtom).composite) {
+      while ((this.caret.cur() as SymAtom).style?.composite) {
         this.caret.target.body.splice(this.caret.pos, 1)[0];
         this.caret.set(this.caret.target, this.caret.pos - 1);
       }
-      const atoms = Array.from(ev.data).map((c) => new CharAtom(c, true));
+      const atoms = Array.from(ev.data).map(
+        (c) => new SymAtom(null, c, c, ["Main-R"], { composite: true })
+      );
       this.caret.target.body.splice(this.caret.pos + 1, 0, ...atoms);
       this.render();
       this.caret.set(this.caret.target, this.caret.pos + atoms.length);
     });
 
     this.textarea.addEventListener("compositionend", (ev) => {
-      while ((this.caret.cur() as CharAtom).composite) {
+      while ((this.caret.cur() as SymAtom).style?.composite) {
         this.caret.target.body.splice(this.caret.pos, 1)[0];
         this.caret.set(this.caret.target, this.caret.pos - 1);
       }
-      this.caret.insert(Array.from(ev.data).map((c) => new CharAtom(c)));
+      this.caret.insert(
+        Array.from(ev.data).map((c) => new SymAtom(null, c, c, ["Main-R"]))
+      );
     });
     this.set("");
   }
@@ -190,8 +197,8 @@ export class EulerEditor extends HTMLElement {
     if (this.caret.isTextMode()) {
       if (ev.data === "[") {
         this.caret.insert([
-          new MathBlockAtom(parse("", true), "display"),
-          new CharAtom(" "),
+          new DisplayAtom(new MathGroup(parse(""))),
+          new CharAtom(" ", "Main-R"),
         ]);
         this.render();
         this.caret.moveLeft();
@@ -200,13 +207,13 @@ export class EulerEditor extends HTMLElement {
         return;
       }
       if (ev.data === "$") {
-        this.caret.insert([new MathBlockAtom(parse("", true), "inline")]);
+        this.caret.insert([new InlineAtom(parse(""))]);
         this.render();
         this.caret.moveLeft();
         this.focus();
         return;
       }
-      const atom = new CharAtom(ev.data);
+      const atom = new CharAtom(ev.data, "Main-R");
       this.caret.insert([atom]);
       return;
     }
@@ -258,7 +265,7 @@ export class EulerEditor extends HTMLElement {
     this.textarea.style.transform = this.caret.elem.style.transform;
     if (ev.isComposing) return;
     if (ev.code == "Enter" && this.caret.isTextMode()) {
-      const atom = new CharAtom("\n");
+      const atom = new CharAtom("\n", "Main-R");
       this.caret.insert([atom]);
       return;
     }
@@ -276,7 +283,7 @@ export class EulerEditor extends HTMLElement {
         const [newR, newC] = MatrixBuilder.add(mat, rowNum, colNum);
         MatrixBuilder.reset();
         this.render();
-        this.caret.set(mat.children[newR][newC], 0);
+        this.caret.set(mat.rows[newR][newC], 0);
         return;
       }
 
@@ -410,7 +417,7 @@ export class EulerEditor extends HTMLElement {
         const [newR, newC] = MatrixDestructor.remove(mat, rowNum, colNum);
         MatrixDestructor.reset();
         this.render();
-        this.caret.set(mat.children[newR][newC], 0);
+        this.caret.set(mat.rows[newR][newC], 0);
         return;
       } else if (this.caret.isMat() && this.caret.isFirst()) {
         MatrixDestructor.set(this.caret.x(), Util.bottom(this.caret.target));
@@ -439,8 +446,13 @@ export class EulerEditor extends HTMLElement {
 
   focus = () => {
     if (this.caret.isTextMode()) return;
-    if (this.caret.isDisplayMode() || this.caret.isInlineMode()) {
+    if (this.caret.isDisplayMode()) {
       const { elem } = Util.parentBlock(this.caret.cur());
+      if (!elem) throw new Error("");
+      elem.classList.add("focus");
+    }
+    if (this.caret.isInlineMode()) {
+      const { elem } = this.caret.cur();
       if (!elem) throw new Error("");
       elem.classList.add("focus");
     }

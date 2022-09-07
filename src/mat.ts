@@ -121,7 +121,7 @@ export module MatrixDestructor {
         Builder.deleteCol(mat, col);
         return [
           row,
-          Math.min(col, Math.max(...mat.children.map((row) => row.length)) - 1),
+          Math.min(col, Math.max(...mat.rows.map((row) => row.length)) - 1),
         ];
 
       case "left":
