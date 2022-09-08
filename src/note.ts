@@ -1,13 +1,11 @@
 import init from "euler-engine";
 import "euler-tex/css/eulertex.css";
 import "euler-tex/css/font.css";
-import { Options } from "euler-tex/src/box/style";
 import {
   Article,
   CharAtom,
   DisplayAtom,
   FracAtom,
-  GroupAtom,
   InlineAtom,
   latexToArticle,
   MathGroup,
@@ -24,12 +22,13 @@ import { MatrixBuilder, MatrixDestructor } from "./mat";
 import { redo, undo } from "./record";
 import { Builder } from "./suggest/builder";
 import { Suggestion } from "./suggest/suggest";
+import { RefView } from "./suggest/view";
 import { Util } from "./util";
 export { loadFont } from "euler-tex/src/lib";
 export class EulerEditor extends HTMLElement {
   textarea: HTMLTextAreaElement;
   field: HTMLElement;
-  root: GroupAtom = new Article([]);
+  root: Article = new Article([]);
   caret: Caret;
   fontMode:
     | "mathbb"
@@ -51,12 +50,25 @@ export class EulerEditor extends HTMLElement {
 
     this.textarea = document.createElement("textarea");
     this.textarea.className = "EE_textarea";
-    this.field.insertAdjacentElement("beforeend", Suggestion.view.elem);
-    this.field.insertAdjacentElement("beforeend", MatrixBuilder.view.elem);
-    this.field.insertAdjacentElement("beforeend", MatrixDestructor.view.elem);
-    this.field.insertAdjacentElement("beforeend", EngineSuggestion.view.elem);
+    const ref = new RefView((ref: string) => {
+      this.textarea.focus();
+      this.caret.insert([
+        new SymAtom("ord", ref, ref, ["Main-R"], { ref: true }),
+      ]);
+    });
+    this.field.append(Suggestion.view.elem);
+    this.field.append(MatrixBuilder.view.elem);
+    this.field.append(MatrixDestructor.view.elem);
+    this.field.append(EngineSuggestion.view.elem);
+    this.field.append(ref.elem);
     Suggestion.init((font, replace) => {
       this.textarea.focus();
+      if (replace === "ref") {
+        this.textarea.blur();
+        ref.open();
+        ref.setList(ref.atomToList(this.root));
+        return;
+      }
       if (font in FontMap) {
         this.fontMode = font as "mathbb";
         return;
@@ -85,7 +97,7 @@ export class EulerEditor extends HTMLElement {
     const caret = document.createElement("div");
     caret.className = "EE_caret";
 
-    this.field.insertAdjacentElement("afterbegin", caret);
+    this.field.prepend(caret);
 
     this.caret = new Caret(caret, this.field, {
       focus: this.focus,
@@ -159,8 +171,7 @@ export class EulerEditor extends HTMLElement {
       console.log("Wasm initialized!!");
     });
     this.setAttribute("tabindex", "0");
-    this.insertAdjacentElement("afterbegin", this.textarea);
-    this.insertAdjacentElement("beforeend", this.field);
+    this.append(this.textarea, this.field);
     this.textarea.focus();
     this.dispatchEvent(
       new Event("mount", { cancelable: false, bubbles: true, composed: true })
@@ -171,15 +182,15 @@ export class EulerEditor extends HTMLElement {
     this.caret.elem.style.height = "0px";
     this.root.elem?.remove();
     this.root = latexToArticle(latex);
-    this.root.toBox(new Options()).toHtml();
+    this.root.toBox().toHtml();
     if (this.root.elem) {
-      this.field.insertAdjacentElement("beforeend", this.root.elem);
+      this.field.append(this.root.elem);
       setLabels(this.root.elem);
     }
   };
 
   getLatex = (): string => {
-    return Util.serializeGroupAtom(this.root.body);
+    return this.root.serialize();
   };
 
   input(ev: InputEvent) {
@@ -197,7 +208,7 @@ export class EulerEditor extends HTMLElement {
     if (this.caret.isTextMode()) {
       if (ev.data === "[") {
         this.caret.insert([
-          new DisplayAtom(new MathGroup(parse(""))),
+          new DisplayAtom(new MathGroup(parse("")), null),
           new CharAtom(" ", "Main-R"),
         ]);
         this.render();
@@ -254,7 +265,7 @@ export class EulerEditor extends HTMLElement {
   render = () => {
     this.blur();
     const prev = this.root.elem;
-    const elem = this.root.toBox(new Options()).toHtml();
+    const elem = this.root.toBox().toHtml();
     if (prev) elem.className = prev.className;
     this.focus();
     elem && prev?.replaceWith(elem);
@@ -452,9 +463,9 @@ export class EulerEditor extends HTMLElement {
       elem.classList.add("focus");
     }
     if (this.caret.isInlineMode()) {
-      const { elem } = this.caret.cur();
-      if (!elem) throw new Error("");
-      elem.classList.add("focus");
+      const inline = Util.parentBlock(this.caret.cur());
+      if (!inline.elem) throw new Error("");
+      inline.elem.classList.add("focus");
     }
   };
 

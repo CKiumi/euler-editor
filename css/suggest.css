@@ -50,3 +50,48 @@
 input[type="text"]:focus {
   outline: none;
 }
+
+.refview {
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  background: rgba(0, 0, 0, 0.48);
+  position: fixed;
+  z-index: 3;
+  align-items: center;
+  justify-content: center;
+  display: none;
+}
+
+.refview > .list {
+  width: 80%;
+  height: 80%;
+  background: rgb(242, 242, 241);
+  z-index: 4;
+  border-radius: 4px;
+  overflow: scroll;
+}
+.refview > .list > div.sub {
+  padding-left: 60px;
+}
+
+.refview > .list > div {
+  border-bottom: 1px black dotted;
+  font-size: 17px;
+  padding: 10px 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.refview .lb {
+  font-weight: bold;
+  color: rgb(66, 66, 66);
+}
+
+.refview .sub {
+  cursor: text !important;
+}

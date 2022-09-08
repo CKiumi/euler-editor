@@ -64,17 +64,17 @@ export const candidates: [string, string, string][] = [
   ...MACRO.map((x) => [x, x, x] as [string, string, string]),
   ...OP.map((x) => [x, x, x] as [string, string, string]),
   ...BLOCK,
+  ["ref", "(1)", "ref"],
 ];
 
 export const candidates2: [string, string, string][] = [
   ["section", "\\section{Section}", "\\section{Section}"],
-  ["subsection", "\\subsection{Sub Section}", "\\subsection{Sub Section}"],
+  ["subsection", "\\subsection{sub}", "\\subsection{Sub Section}"],
   [
     "subsubsection",
-    "\\subsubsection{Sub Sub Section}",
+    "\\subsubsection{subsub}",
     "\\subsubsection{Sub Sub Section}",
   ],
-  ["equation", "\\[\\]", "\\[\\]"],
   [
     "equation",
     "\\begin{equation}x=y\\end{equation}",
@@ -97,8 +97,9 @@ export const candidates2: [string, string, string][] = [
   ],
   [
     "theorem",
-    "\\begin{theorem}x=y\\end{theorem}",
-    "\\begin{theorem}x=y\\end{theorem}",
+    "\\begin{theorem}\\end{theorem}",
+    "\\begin{theorem}\\end{theorem}",
   ],
   ["proof", "\\begin{proof}x=y\\end{proof}", "\\begin{proof}x=y\\end{proof}"],
+  ["ref", "(1)", "ref"],
 ];

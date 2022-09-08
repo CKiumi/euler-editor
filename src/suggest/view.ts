@@ -1,3 +1,17 @@
+import { Article, MatrixAtom, SectionAtom } from "euler-tex/src/lib";
+import { Util } from "../util";
+
+export interface List {
+  text: string;
+  preview: HTMLElement;
+  onClick: () => void;
+}
+
+export interface RefList {
+  text: string;
+  preview: HTMLElement;
+  sub?: boolean;
+}
 export class SuggestView {
   elem: HTMLDivElement = document.createElement("div");
   list: HTMLDivElement = document.createElement("div");
@@ -53,9 +67,7 @@ export class SuggestView {
     this.at().classList.add("focus");
   }
 
-  setList = (
-    variable: { text: string; preview: HTMLElement; onClick: () => void }[]
-  ) => {
+  setList = (variable: List[]) => {
     this.list.innerHTML = "";
     variable.forEach(({ text, preview, onClick }) => {
       const div = document.createElement("div");
@@ -77,5 +89,117 @@ export class SuggestView {
     });
     this.pos = 0;
     this.at()?.classList.add("focus");
+  };
+}
+
+export class RefView {
+  elem = document.createElement("div");
+  list = document.createElement("div");
+  pos = 0;
+  constructor(public onSelected: (ref: string) => void) {
+    this.elem.className = "refview";
+    this.list.className = "list";
+    this.elem.tabIndex = 0;
+    this.elem.append(this.list);
+    this.elem.addEventListener("pointerdown", (ev) => {
+      ev.stopPropagation();
+      if (ev.target === this.elem) this.close();
+    });
+    this.elem.addEventListener("pointermove", (ev) => {
+      ev.stopPropagation();
+    });
+    this.elem.addEventListener("keydown", (ev) => {
+      ev.preventDefault();
+      if (ev.key === "ArrowUp") this.up();
+      if (ev.key === "ArrowDown") this.down();
+      if (ev.key === "Enter") this.select();
+    });
+  }
+
+  at = () => this.children()[this.pos];
+
+  open() {
+    this.elem.style.display = "flex";
+    this.elem.focus();
+  }
+
+  children() {
+    return Array.from(this.list.children).filter(
+      (e) => !e.classList.contains("sub")
+    );
+  }
+  close() {
+    this.list.innerHTML = "";
+    this.elem.style.display = "none";
+  }
+
+  select = () => {
+    this.at().dispatchEvent(new Event("click", {}));
+    this.pos = 0;
+    this.close();
+  };
+
+  up() {
+    const last = this.children().length - 1;
+    const newPos = this.pos === 0 ? last : this.pos - 1;
+    this.at().classList.remove("focus");
+    this.pos = newPos;
+    this.at().classList.add("focus");
+  }
+
+  down() {
+    const last = this.children().length - 1;
+    const newPos = this.pos === last ? 0 : this.pos + 1;
+    this.at().classList.remove("focus");
+    this.pos = newPos;
+    this.at().classList.add("focus");
+  }
+
+  setList = (variable: RefList[]) => {
+    document.body.style.overflow = "hidden";
+    variable.forEach(({ sub, text, preview }) => {
+      const div = document.createElement("div");
+      div.append(preview);
+      if (text) {
+        const label = document.createElement("div");
+        label.classList.add("lb");
+        label.innerText = "Label: " + text;
+        div.append(label);
+      }
+      if (sub) div.classList.add("sub");
+      div.onclick = () => {
+        this.close();
+        this.onSelected(text);
+        document.body.style.overflow = "unset";
+      };
+      this.list.append(div);
+    });
+    this.pos = 0;
+    this.at()?.classList.add("focus");
+  };
+
+  atomToList = (atom: Article) => {
+    const list: RefList[] = [];
+    const atoms = atom.body.filter((a): a is SectionAtom | MatrixAtom =>
+      Util.idLabeled(a)
+    );
+    atoms.forEach((atom) => {
+      if (atom instanceof MatrixAtom) {
+        if (atom.labels.length === 0 || !atom.elem) return;
+        const preview = atom.elem.cloneNode(true) as HTMLElement;
+        list.push({ sub: true, text: "", preview });
+        atom.labels.forEach((_, i) => {
+          const text = atom.labels[i];
+          const preview = document.createElement("span");
+          list.push({ text, preview });
+        });
+        return;
+      }
+      if (!atom.elem || !atom.label) return;
+      const text = atom.label;
+      const preview = atom.elem.cloneNode(true) as HTMLElement;
+      list.push({ text, preview });
+    });
+    return list;
   };
 }

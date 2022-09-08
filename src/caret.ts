@@ -32,33 +32,36 @@ export class Caret {
   ) {
     this.elem.style.height = "0";
   }
-
-  x() {
-    return Util.right(this.cur());
-  }
-  y() {
-    return Util.bottom(this.cur());
-  }
-
-  cur() {
-    return this.target.body[this.pos];
-  }
-
+  x = () => Util.right(this.cur());
+  y = () => Util.bottom(this.cur());
+  cur = () => this.target.body[this.pos];
   renderCaret = (): true => {
     const { elem } = this.cur();
     if (!elem) throw new Error("Element not found in current pointed atom");
     const rect = elem.getBoundingClientRect();
-    if (!elem.parentElement) throw new Error("Parent element not found");
-    const parentRect = Util.getLineRect(elem, elem.parentElement);
-    if (this.cur() instanceof DisplayAtom) {
-      const [x, y] = this.toReltiveCoord([rect.x + rect.width, rect.y]);
-      this.elem.style.cssText = `height:${Util.height(this.cur())}px; 
-        transform:translate(${x - 1}px,${y}px)`;
+    let [x, y, h] = [0, 0, 0];
+    if (
+      this.cur() instanceof DisplayAtom ||
+      this.cur() instanceof SectionAtom
+    ) {
+      [x, y] = this.toReltiveCoord([rect.x + rect.width, rect.y]);
+      h = Util.height(this.cur());
+    } else if (
+      this.target instanceof MathGroup ||
+      this.target instanceof InlineAtom
+    ) {
+      if (!this.target.elem)
+        throw new Error("Element not found in current pointed atom");
+      const parentRect = this.target.elem.getBoundingClientRect();
+      [x, y] = this.toReltiveCoord([rect.x + rect.width, parentRect.y]);
+      h = parentRect.height;
     } else {
-      const [x, y] = this.toReltiveCoord([rect.x + rect.width, parentRect.y]);
-      this.elem.style.cssText = `height:${parentRect.height}px; 
-        transform:translate(${x - 1}px,${y}px)`;
+      const pRect = elem.getBoundingClientRect();
+      [x, y] = this.toReltiveCoord([rect.x + rect.width, pRect.y]);
+      h = pRect.height;
     }
+    this.elem.style.cssText = `height:${h}px; 
+transform:translate(${x - 1}px,${y}px)`;
     this.elem.classList.remove("EE_caret");
     this.elem.offsetWidth;
     this.elem.classList.add("EE_caret");
@@ -99,7 +102,7 @@ export class Caret {
       const div = document.createElement("div");
       div.className = "EE_selection";
       this.selElem.push(div);
-      this.field.insertAdjacentElement("afterbegin", div);
+      this.field.prepend(div);
       this.selElem[i].style.height = `${rect.height}px`;
       this.selElem[i].style.transform = `translate(${relX}px,${relY}px)`;
       this.selElem[i].style.width = `${right - left}px`;
@@ -140,7 +143,10 @@ export class Caret {
   getValue() {
     if (this.sel === null) return "";
     const [start, end] = this.range();
-    return Util.serializeGroupAtom(this.target.body.slice(start + 1, end + 1));
+    return this.target.body
+      .slice(start + 1, end + 1)
+      .map((x) => x.serialize())
+      .join("");
   }
 
   moveRight() {
@@ -598,11 +604,10 @@ export class Caret {
   };
 
   isDisplayMode = () => {
-    const parent = Util.parentBlock(this.cur());
-    return parent instanceof DisplayAtom;
+    return Util.parentBlock(this.cur()) instanceof DisplayAtom;
   };
 
-  isInlineMode = () => this.target instanceof InlineAtom;
+  isInlineMode = () => Util.parentBlock(this.cur()) instanceof InlineAtom;
 
   isSup() {
     if (!(this.target.parent instanceof SupSubAtom)) return false;
@@ -702,18 +707,15 @@ export class Caret {
         this.set(newAtom, newAtom.body.indexOf(body.parent));
       } else {
         const { sup, sub } = body.parent;
-        if (sup) {
-          this.set(sup, 0);
-        } else if (sub) {
-          this.set(sub, 0);
-        } else {
-          throw new Error("Either Sup or Sub must exist");
-        }
+        if (sup) this.set(sup, 0);
+        else if (sub) this.set(sub, 0);
+        else throw new Error("Either Sup or Sub must exist");
       }
 
       return;
     }
-    if (!(body.parent instanceof MathGroup)) {
+
+    if (!body.parent) {
       throw new Error(
         "Try exit from LRAtom body, however counld not find parent of LRAtom"
       );

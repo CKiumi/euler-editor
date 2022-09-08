@@ -1,22 +1,16 @@
-import { OpAtom } from "euler-tex/src/atom/op";
 import {
   AccentAtom,
   Article,
   Atom,
-  CharAtom,
   DisplayAtom,
-  FracAtom,
   InlineAtom,
   LRAtom,
   MatrixAtom,
   OverlineAtom,
   SectionAtom,
   SqrtAtom,
-  SupSubAtom,
-  SymAtom,
   ThmAtom,
 } from "euler-tex/src/lib";
-import { ACC } from "euler-tex/src/parser/command";
 
 export module Util {
   export const parentBlock = (atom: Atom): Atom => {
@@ -31,12 +25,13 @@ export module Util {
 
   export const isSingleBody = (
     atom: Atom | null
-  ): atom is LRAtom | SqrtAtom | AccentAtom | OverlineAtom => {
+  ): atom is LRAtom | SqrtAtom | AccentAtom | OverlineAtom | DisplayAtom => {
     return (
       atom instanceof LRAtom ||
       atom instanceof SqrtAtom ||
       atom instanceof AccentAtom ||
-      atom instanceof OverlineAtom
+      atom instanceof OverlineAtom ||
+      atom instanceof DisplayAtom
     );
   };
 
@@ -66,6 +61,15 @@ export module Util {
       atom instanceof InlineAtom ||
       atom instanceof SectionAtom ||
       atom instanceof Article
+    );
+  };
+
+  export const idLabeled = (a: Atom) => {
+    return (
+      a instanceof SectionAtom ||
+      a instanceof ThmAtom ||
+      (a instanceof DisplayAtom && !!a.label) ||
+      (a instanceof MatrixAtom && a.type === "align")
     );
   };
 
@@ -129,20 +133,6 @@ export module Util {
     return x > rect.left && x < rect.right && y > rect.top && y < rect.bottom;
   };
 
-  export const getLineRect = (target: HTMLElement, block: HTMLElement) => {
-    const rects = Array.from(block.getClientRects());
-    const y =
-      target.getBoundingClientRect().y +
-      target.getBoundingClientRect().height / 2;
-
-    for (const rect of rects) {
-      if (y > rect.top && y < rect.bottom) {
-        return rect;
-      }
-    }
-    throw new Error("target html is not in block");
-  };
-
   export const getLineRects = (
     anchor: HTMLElement,
     target: HTMLElement,
@@ -158,71 +148,5 @@ export module Util {
         rects[i - 1].bottom <= target.getBoundingClientRect().y
       );
     });
-  };
-
-  export const serializeGroupAtom = (atoms: Atom[]): string => {
-    return atoms
-      .map((atom) => serialize(atom))
-      .filter(Boolean)
-      .join("");
-  };
-
-  export const serialize = (atom: Atom): string => {
-    if (atom instanceof CharAtom) {
-      return atom.char === "&nbsp;" ? " " : atom.char;
-    }
-    if (atom instanceof SymAtom) return atom.command ?? atom.char;
-    if (atom instanceof InlineAtom)
-      return "$" + serializeGroupAtom(atom.body) + "$";
-    if (atom instanceof DisplayAtom)
-      return "\\[" + serialize(atom.body) + "\\]";
-
-    if (atom instanceof OpAtom) {
-      return "\\" + atom.body + " ";
-    }
-    if (atom instanceof SqrtAtom) {
-      return `\\sqrt{${serializeGroupAtom(atom.body.body)}}`;
-    }
-    if (atom instanceof FracAtom) {
-      return `\\frac{${serializeGroupAtom(
-        atom.numer.body
-      )}}{${serializeGroupAtom(atom.denom.body)}}`;
-    }
-    if (atom instanceof OverlineAtom) {
-      return `\\overline{${serializeGroupAtom(atom.body.body)}}`;
-    }
-    if (atom instanceof AccentAtom) {
-      const command = Object.keys(ACC).find(
-        (key) => ACC[key] === atom.accent.char
-      );
-      return `${command}{${serializeGroupAtom(atom.body.body)}}`;
-    }
-    if (atom instanceof LRAtom) {
-      return `\\left${atom.left
-        .replace("∣", "|")
-        .replace("{", "\\{")}${serializeGroupAtom(
-        atom.body.body
-      )} \\right${atom.right.replace("∣", "|").replace("}", "\\}")}`;
-    }
-    if (atom instanceof SupSubAtom) {
-      let [sup, sub] = ["", ""];
-      if (atom.sup) sup = `^{${serializeGroupAtom(atom.sup.body)}}`;
-      if (atom.sub) sub = `_{${serializeGroupAtom(atom.sub.body)}}`;
-      return `${serialize(atom.nuc)}${sub}${sup}`;
-    }
-    if (atom instanceof MatrixAtom) {
-      let result = "";
-      for (let row = 0; row < atom.children.length; row++) {
-        for (let col = 0; col < atom.rows[row].length; col++) {
-          if (col > 0) result += " & ";
-          result += serializeGroupAtom(atom.rows[row][col].body);
-        }
-        if (row < atom.children.length - 1) {
-          result += " \\\\ ";
-        }
-      }
-      return `\\begin{${atom.type}}${result}\\end{${atom.type}}`;
-    }
-    return "";
   };
 }

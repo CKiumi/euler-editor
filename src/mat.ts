@@ -2,11 +2,11 @@ import { MatrixAtom } from "euler-tex/src/lib";
 import { Builder } from "./suggest/builder";
 
 export class MatBuilderView {
-  elem: HTMLDivElement = document.createElement("div");
-  left: HTMLDivElement = document.createElement("div");
-  right: HTMLDivElement = document.createElement("div");
-  bottom: HTMLDivElement = document.createElement("div");
-  top: HTMLDivElement = document.createElement("div");
+  elem = document.createElement("div");
+  left = document.createElement("div");
+  right = document.createElement("div");
+  bottom = document.createElement("div");
+  top = document.createElement("div");
   direction: "left" | "top" | "right" | "bottom" = "bottom";
   pos = 0;
   constructor() {

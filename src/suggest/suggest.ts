@@ -36,10 +36,11 @@ export module Suggestion {
           distance(c1.replace("\\", ""), text)
       )
       .map(([suggested, preview, replaceStr]) => {
+        const html = MathLatexToHtml(preview, textMode ? "text" : "display");
+        html.classList.remove("text", "display");
         return {
           text: suggested,
-          preview: MathLatexToHtml(preview, textMode ? "text" : "display")
-            .children[0] as HTMLElement,
+          preview: html,
           onClick: () => {
             onSelected(suggested, replaceStr);
           },

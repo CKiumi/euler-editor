@@ -10,7 +10,7 @@ export module Builder {
   };
 
   export const addRow = (mat: MatrixAtom, pos: number) => {
-    if (pos < 0 || pos > mat.children.length) {
+    if (pos < 0 || pos > mat.rows.length) {
       throw new Error("Try to add row in invalid position");
     }
     const length = Math.max(...mat.rows.map((row) => row.length));

@@ -1,30 +1,16 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import { MatBuilderView } from "./src/mat";
-import { MathLatexToHtml, loadFont } from "euler-tex/src/lib";
-import EulerEditor from "./src/note";
-import { SuggestView } from "./src/suggest/view";
+import { loadFont } from "euler-tex/src/lib";
 import "./src/engine/pyodide";
+import EulerEditor from "./src/note";
 loadFont();
 
 const main = document.getElementById("main");
 [1].forEach(() => {
   main!.innerHTML += `
-  <button id="collect">Suggestion Test</button>
-  <button id="mat-builder-test">MatrixBuilder Test</button>
   <euler-editor id="t"></euler-editor>
   `;
 });
 const eulerNote = document.getElementById("t") as EulerEditor;
-const collectBtn = document.getElementById("collect");
-const matBuilderBtn = document.getElementById("mat-builder-test");
-collectBtn!.onclick = () => {
-  // eulerNote.caret.insert(parse(collect(eulerNote.caret.getValue())));/
-  testSuggest();
-};
-
-matBuilderBtn!.onclick = () => {
-  testMatBuilder();
-};
 
 eulerNote.addEventListener("mount", () => {
   const intro = String.raw`
@@ -36,12 +22,13 @@ Theorem \ref{Theorem Ker} is the main theorem, which gives a necessary and suffi
 \subsection{Multi-state quantum walks on the integer lattice}
 Firstly, we introduce $n$-state QWs with $n-2$ self-loops on the integer lattice $\mathbb{Z}$.
 Let $\mathcal{H}$ be a Hilbert space defined by
-\[
+\begin{equation}
       \mathcal{H}=\ell^2(\mathbb{Z} ; \mathbb{C}^n) =
       \left\{
       \Psi : \mathbb{Z} \to \mathbb{C}^n\ \middle\vert\ \sum_{x\in\mathbb{Z}}\|\Psi(x)\|_{\mathbb{C}^n}^2 < \infty
       \right\},
-      \]
+      \label{eq:0}
+\end{equation}
       where $n \geq 3$ and $\mathbb{C}$ denotes the set of complex numbers. We write $n$-state quantum state $\Psi:\mathbb{Z}\rightarrow \mathbb{C}^n$ as below:
       \[
       \Psi (x)=\left[\begin{matrix}
@@ -168,68 +155,10 @@ The method to solve the eigenvalue problem of space-inhomogeneous two-state QWs 
       \Psi_{n}(x)
       \end{array}\right].
       \]
+      \begin{corollary}\label{cor:ell2}
+      Let $\lambda\in [0,2\pi)$ satisfying $A_x(\lambda)\neq0$ for all $x$, $e^{i\lambda}\in\sigma_p(U)$ if and only if there exists $\tilde\Psi\in W_{\lambda} \setminus\{\mathbf{0}\}$ such that $\tilde\Psi\in\ell^2(\mathbb{Z};\mathbb{C}^2)$, and associated eigenvector of $e^{i\lambda}$ becomes $\iota^{-1}\tilde\Psi$.
+      \end{corollary}
       `;
-
   const article = String.raw`${intro}${sec2}`;
-
   eulerNote.set(article);
-  // eulerNote.set(
-  //   String.raw`Ok Let's start with the following equation. You can expand and factor\[\left(x+y \right)^{2},\]The more complicated example:\[\left(\sqrt{x}-\frac{z}{k}\right)^3  \]With trig expand, you can expand\[\sin(x+y)+\cos(x+y)\]\[\sin(x+y)+\cos(x+y)\]日本語も打てるよ。 inline math-mode $x+y= z$ Multiline editing is also supported now. $\pounds \in C$ aligned is also supported \[ \begin{aligned}x&=a\\&=c+d\end{aligned} \]and also cases\[ \begin{cases}x+y&a<0\\c+d&a\geq0\end{cases} \]Matrix calculations are also supported\[\begin{pmatrix}a & b \\ c & d\end{pmatrix}\begin{pmatrix}e & f \\ g & h\end{pmatrix}+\begin{pmatrix}e & f \\ g & h\end{pmatrix}\]!!!`
-  // );
 });
-
-const wait = () => new Promise((resolve) => setTimeout(resolve, 400));
-const testSuggest = async () => {
-  const Symbol = ["\\alpha", "\\beta", "\\gamma", "\\zeta"];
-  const BLOCK = [
-    ["\\pmatrix", "\\begin{pmatrix}x&x\\\\x&x\\end{pmatrix}"],
-    ["\\frac", "\\frac{a}{b}"],
-  ];
-
-  const blockList = BLOCK.map(([text, prev]) => ({
-    text,
-    preview: MathLatexToHtml(prev),
-    onClick: () => console.log("clicked " + text),
-  }));
-  const symbolList = Symbol.map((text) => ({
-    text,
-    preview: MathLatexToHtml(text),
-    onClick: () => console.log("clicked " + text),
-  }));
-  const main = document.getElementById("main");
-  const autoCompletion = new SuggestView(true);
-  main!.append(autoCompletion.elem);
-  autoCompletion.open(70, 70);
-  autoCompletion.setList([...blockList, ...symbolList]);
-  await wait();
-  autoCompletion.up();
-  await wait();
-  autoCompletion.up();
-  await wait();
-  autoCompletion.down();
-  await wait();
-  autoCompletion.down();
-  await wait();
-  autoCompletion.down();
-  await wait();
-  autoCompletion.setList([]);
-  await wait();
-  autoCompletion.setList([...symbolList]);
-  await wait();
-  autoCompletion.close();
-  await wait();
-  autoCompletion.open(170, 170);
-  await wait();
-  autoCompletion.select();
-};
-
-const testMatBuilder = async () => {
-  const main = document.getElementById("main");
-  const matBilder = new MatBuilderView();
-  main!.append(matBilder.elem);
-  matBilder.open(400, 400);
-  await wait();
-  matBilder.select("top");
-  await wait();
-  matBilder.close();
-};
