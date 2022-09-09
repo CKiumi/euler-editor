@@ -3,12 +3,17 @@ import {
   Article,
   Atom,
   DisplayAtom,
+  FracAtom,
+  GroupAtom,
   InlineAtom,
   LRAtom,
+  MathGroup,
   MatrixAtom,
   OverlineAtom,
   SectionAtom,
   SqrtAtom,
+  SupSubAtom,
+  TextGroup,
   ThmAtom,
 } from "euler-tex/src/lib";
 
@@ -56,11 +61,14 @@ export module Util {
 
   export const isSingleBlock = (
     atom: Atom
-  ): atom is InlineAtom | SectionAtom | Article => {
+  ): atom is InlineAtom | SectionAtom | Article | ThmAtom => {
     return (
       atom instanceof InlineAtom ||
       atom instanceof SectionAtom ||
-      atom instanceof Article
+      atom instanceof Article ||
+      atom instanceof ThmAtom ||
+      atom instanceof MathGroup ||
+      atom instanceof TextGroup
     );
   };
 
@@ -71,6 +79,37 @@ export module Util {
       (a instanceof DisplayAtom && !!a.label) ||
       (a instanceof MatrixAtom && a.type === "align")
     );
+  };
+
+  export const firstChild = (atom: Atom): [GroupAtom, number] | null => {
+    if (isSingleBody(atom)) return [atom.body, 0];
+    if (atom instanceof MatrixAtom) return [atom.rows[0][0], 0];
+    if (atom instanceof FracAtom) return [atom.numer, 0];
+    if (isSingleBlock(atom)) return [atom, 0];
+    if (atom instanceof SupSubAtom) {
+      if (atom.nuc instanceof LRAtom) return [atom.nuc.body, 0];
+      else if (atom.sup) return [atom.sup, 0];
+      else if (atom.sub) return [atom.sub, 0];
+      else throw new Error("SupSubAtom must have sup or sub");
+    }
+    return null;
+  };
+
+  export const lastChild = (atom: Atom): [GroupAtom, number] | null => {
+    if (isSingleBody(atom)) return [atom.body, atom.body.body.length - 1];
+    if (atom instanceof MatrixAtom) {
+      const group = atom.rows[0][atom.rows[0].length - 1];
+      return [group, group.body.length - 1];
+    }
+    if (atom instanceof FracAtom)
+      return [atom.numer, atom.numer.body.length - 1];
+    if (isSingleBlock(atom)) return [atom, atom.body.length - 1];
+    if (atom instanceof SupSubAtom) {
+      if (atom.sup) return [atom.sup, atom.sup.body.length - 1];
+      else if (atom.sub) return [atom.sub, atom.sub.body.length - 1];
+      else throw new Error("SupSubAtom must have sup or sub");
+    }
+    return null;
   };
 
   export const right = (atom: Atom): number => {

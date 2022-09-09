@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "euler-engine": "./pkg/euler-engine-v0.0.10.tgz",
-    "euler-tex": "./pkg/euler-tex-v0.6.7.tgz"
+    "euler-tex": "./pkg/euler-tex-v0.6.8.tgz"
   },
   "devDependencies": {
     "@playwright/test": "^1.25.1",

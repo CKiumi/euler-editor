@@ -157,7 +157,7 @@ The method to solve the eigenvalue problem of space-inhomogeneous two-state QWs 
       \]
       \begin{corollary}\label{cor:ell2}
       Let $\lambda\in [0,2\pi)$ satisfying $A_x(\lambda)\neq0$ for all $x$, $e^{i\lambda}\in\sigma_p(U)$ if and only if there exists $\tilde\Psi\in W_{\lambda} \setminus\{\mathbf{0}\}$ such that $\tilde\Psi\in\ell^2(\mathbb{Z};\mathbb{C}^2)$, and associated eigenvector of $e^{i\lambda}$ becomes $\iota^{-1}\tilde\Psi$.
-      \end{corollary}
+      \end{corollary}s
       `;
   const article = String.raw`${intro}${sec2}`;
   eulerNote.set(article);

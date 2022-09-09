@@ -5,7 +5,6 @@ import {
   Article,
   CharAtom,
   DisplayAtom,
-  FracAtom,
   InlineAtom,
   latexToArticle,
   MathGroup,
@@ -16,9 +15,9 @@ import {
   SymAtom,
 } from "euler-tex/src/lib";
 import { FontMap } from "euler-tex/src/parser/command";
-import { Caret } from "./caret";
+import { Caret } from "./caret/caret";
 import { EngineSuggestion } from "./engine";
-import { MatrixBuilder, MatrixDestructor } from "./mat";
+import { MatrixBuilder, MatrixDestructor } from "./mat/mat";
 import { redo, undo } from "./record";
 import { Builder } from "./suggest/builder";
 import { Suggestion } from "./suggest/suggest";
@@ -56,11 +55,13 @@ export class EulerEditor extends HTMLElement {
         new SymAtom("ord", ref, ref, ["Main-R"], { ref: true }),
       ]);
     });
-    this.field.append(Suggestion.view.elem);
-    this.field.append(MatrixBuilder.view.elem);
-    this.field.append(MatrixDestructor.view.elem);
-    this.field.append(EngineSuggestion.view.elem);
-    this.field.append(ref.elem);
+    this.field.append(
+      Suggestion.view.elem,
+      MatrixBuilder.view.elem,
+      MatrixDestructor.view.elem,
+      EngineSuggestion.view.elem,
+      ref.elem
+    );
     Suggestion.init((font, replace) => {
       this.textarea.focus();
       if (replace === "ref") {
@@ -76,18 +77,8 @@ export class EulerEditor extends HTMLElement {
       this.caret.insert(
         this.caret.isTextMode() ? parse(replace) : prarseMath(replace)
       );
-      const atom = this.caret.cur();
-      if (
-        Util.isSingleBody(atom) ||
-        atom instanceof FracAtom ||
-        atom instanceof InlineAtom
-      ) {
-        this.caret.moveLeft();
-      }
-
-      if (atom instanceof MatrixAtom) {
-        this.caret.set(atom.rows[0][0], 0);
-      }
+      this.caret.set(this.caret.target, this.caret.pos - 1);
+      this.caret.moveRight();
     });
 
     this.addEventListener("focusout", () => {
@@ -119,8 +110,11 @@ export class EulerEditor extends HTMLElement {
       this.onPointerDown(ev);
       this.textarea.focus();
     });
+    let lastTime = 0;
     this.addEventListener("pointermove", (ev: PointerEvent) => {
       if (ev.buttons === 1 && ev.timeStamp) {
+        if (ev.timeStamp - lastTime < 20) return;
+        lastTime = ev.timeStamp;
         this.caret.extendSel(ev.clientX, ev.clientY);
       }
     });
