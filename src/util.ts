@@ -28,6 +28,16 @@ export module Util {
     return parent;
   };
 
+  export const isMathParent = (
+    atom: Atom | null
+  ): atom is InlineAtom | DisplayAtom | MatrixAtom => {
+    return (
+      atom instanceof InlineAtom ||
+      atom instanceof MatrixAtom ||
+      atom instanceof DisplayAtom
+    );
+  };
+
   export const isSingleBody = (
     atom: Atom | null
   ): atom is LRAtom | SqrtAtom | AccentAtom | OverlineAtom | DisplayAtom => {
@@ -167,11 +177,6 @@ export module Util {
     return top + (bottom - top) / 2;
   };
 
-  export const isInBlock = ([x, y]: [number, number], block: HTMLElement) => {
-    const rect = block.getBoundingClientRect();
-    return x > rect.left && x < rect.right && y > rect.top && y < rect.bottom;
-  };
-
   export const getLineRects = (
     anchor: HTMLElement,
     target: HTMLElement,
@@ -179,9 +184,7 @@ export module Util {
   ) => {
     const rects = Array.from(block.getClientRects());
     return rects.filter((rect, i) => {
-      if (i === 0) {
-        return rect.bottom > anchor.getBoundingClientRect().y;
-      }
+      if (i === 0) return rect.bottom > anchor.getBoundingClientRect().y;
       return (
         rect.bottom > anchor.getBoundingClientRect().y &&
         rects[i - 1].bottom <= target.getBoundingClientRect().y

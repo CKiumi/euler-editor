@@ -7,8 +7,8 @@ export module Suggestion {
   export let insert: (atoms: Atom[]) => void;
   // eslint-disable-next-line prefer-const
   export let textMode = false;
-  export let positions: [left: number, top: number] = [0, 0];
   export let onSelected: (name: string, replace: string) => void;
+
   export const init = (onClick: (name: string, replace: string) => void) => {
     onSelected = onClick;
     view.input.addEventListener("keydown", (ev) => {
@@ -17,39 +17,31 @@ export module Suggestion {
       if (ev.code === "ArrowDown") view.down();
     });
     view.input.addEventListener("input", () => {
-      set(positions);
+      set();
     });
   };
+
   export const reset = () => {
     view.close();
   };
-
-  export const set = (position: [left: number, top: number]) => {
+  export const open = (position: [left: number, top: number]) =>
     view.open(position[0], position[1]);
-    positions = position;
+
+  export const set = () => {
     const text = view.input.value;
     const list = (textMode ? candidates2 : candidates)
-      .filter(([c1]) => distance(c1.replace("\\", ""), text) > 0)
-      .sort(
-        ([c1], [c2]) =>
-          distance(c2.replace("\\", ""), text) -
-          distance(c1.replace("\\", ""), text)
-      )
-      .map(([suggested, preview, replaceStr]) => {
+      .filter(([c1]) => d(c1.replace("\\", ""), text) > 0)
+      .sort(([c1], [c2]) => d(c2.slice(1), text) - d(c1.slice(1), text))
+      .map(([text, preview, replaceStr]) => {
         const html = MathLatexToHtml(preview, textMode ? "text" : "display");
         html.classList.remove("text", "display");
-        return {
-          text: suggested,
-          preview: html,
-          onClick: () => {
-            onSelected(suggested, replaceStr);
-          },
-        };
+        const onClick = () => onSelected(text, replaceStr);
+        return { text, preview: html, onClick };
       });
     view.setList(list);
   };
 
-  export const distance = (s: string, input: string) => {
+  export const d = (s: string, input: string) => {
     if (s === input) return 3;
     if (s.startsWith(input)) return 2;
     if (s.includes(input)) {

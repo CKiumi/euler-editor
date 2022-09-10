@@ -284,9 +284,7 @@ transform:translate(${x - 1}px,${y}px)`;
           }
         }
       }
-    } else {
-      return false;
-    }
+    } else return false;
     return true;
   }
 
@@ -448,11 +446,13 @@ transform:translate(${x - 1}px,${y}px)`;
       group = g;
       [, i] = Pointer.pointText(x, y, g as Article);
     }
+
     if (recursive) {
-      const atom = [...group.body[i].children()].reduce((prev, cur) => {
+      const atom = group.body[i].children().reduce((prev, cur) => {
         if (Pointer.d(cur, [x, y]) <= Pointer.d(prev, [x, y])) return cur;
         else return prev;
       });
+
       const parent = atom.parent as GroupAtom;
       if (parent) this.set(parent, parent.body.indexOf(atom));
       this.action.focus();
@@ -521,6 +521,10 @@ transform:translate(${x - 1}px,${y}px)`;
       this.target instanceof Article ||
       this.target instanceof SectionAtom
     );
+  };
+
+  isSectionMode = () => {
+    return Util.parentBlock(this.cur()) instanceof SectionAtom;
   };
 
   isDisplayMode = () => {

@@ -9,8 +9,10 @@ import {
   latexToArticle,
   MathGroup,
   MatrixAtom,
+  MidAtom,
   parse,
   prarseMath,
+  SectionAtom,
   setLabels,
   SymAtom,
 } from "euler-tex/src/lib";
@@ -74,9 +76,14 @@ export class EulerEditor extends HTMLElement {
         this.fontMode = font as "mathbb";
         return;
       }
-      this.caret.insert(
-        this.caret.isTextMode() ? parse(replace) : prarseMath(replace)
-      );
+      if (replace === "\\middle|") {
+        this.caret.insert([new MidAtom("|")]);
+      } else {
+        this.caret.insert(
+          this.caret.isTextMode() ? parse(replace) : prarseMath(replace)
+        );
+      }
+
       this.caret.set(this.caret.target, this.caret.pos - 1);
       this.caret.moveRight();
     });
@@ -125,10 +132,9 @@ export class EulerEditor extends HTMLElement {
       const latex = ev.clipboardData
         ? ev.clipboardData.getData("text/plain")
         : "";
-      const atoms =
-        Util.parentBlock(this.caret.cur()) instanceof InlineAtom
-          ? prarseMath(latex, true)
-          : parse(latex);
+      const atoms = Util.isMathParent(Util.parentBlock(this.caret.cur()))
+        ? prarseMath(latex, true)
+        : parse(latex);
       this.caret.insert(atoms);
     });
     this.textarea.addEventListener("compositionstart", () => {
@@ -195,10 +201,13 @@ export class EulerEditor extends HTMLElement {
     }
 
     if (ev.data === "\\") {
+      if (this.caret.isSectionMode()) return;
       Suggestion.textMode = !!this.caret.isTextMode();
-      Suggestion.set([this.caret.x(), this.caret.y()]);
+      Suggestion.open([this.caret.x(), this.caret.y()]);
+      Suggestion.set();
       return;
     }
+
     if (this.caret.isTextMode()) {
       if (ev.data === "[") {
         this.caret.insert([
@@ -364,13 +373,13 @@ export class EulerEditor extends HTMLElement {
         );
         this.caret.setSel([prev, this.caret.cur()]);
       } else if (!this.caret.moveDown()) {
-        if (this.caret.isDisplayMode()) {
-          this.pointAtom([
-            this.caret.x(),
-            Util.bottom(Util.parentBlock(this.caret.cur())) + 10,
-          ]);
+        const x = this.caret.x();
+        const parent = Util.parentBlock(this.caret.cur());
+        if (parent instanceof DisplayAtom || parent instanceof SectionAtom) {
+          const y = Util.bottom(Util.parentBlock(this.caret.cur())) + 10;
+          this.pointAtom([x, y]);
         } else {
-          this.pointAtom([this.caret.x(), Util.bottom(this.caret.cur()) + 20]);
+          this.pointAtom([x, Util.bottom(this.caret.cur()) + 10]);
         }
         return;
       }
@@ -399,7 +408,8 @@ export class EulerEditor extends HTMLElement {
         );
         this.caret.setSel([prev, this.caret.cur()]);
       } else if (!this.caret.moveUp()) {
-        if (this.caret.isDisplayMode()) {
+        const parent = Util.parentBlock(this.caret.cur());
+        if (parent instanceof DisplayAtom || parent instanceof SectionAtom) {
           this.pointAtom([
             this.caret.x(),
             Util.top(Util.parentBlock(this.caret.cur())) - 10,

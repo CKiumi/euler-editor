@@ -65,6 +65,7 @@ export const candidates: [string, string, string][] = [
   ...OP.map((x) => [x, x, x] as [string, string, string]),
   ...BLOCK,
   ["ref", "(1)", "ref"],
+  ["\\middle", "|", "\\middle|"],
 ];
 
 export const candidates2: [string, string, string][] = [
