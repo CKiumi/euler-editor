@@ -58,6 +58,7 @@ export class EulerEditor extends HTMLElement {
       ]);
     });
     this.field.append(
+      this.textarea,
       Suggestion.view.elem,
       MatrixBuilder.view.elem,
       MatrixDestructor.view.elem,
@@ -120,7 +121,7 @@ export class EulerEditor extends HTMLElement {
     let lastTime = 0;
     this.addEventListener("pointermove", (ev: PointerEvent) => {
       if (ev.buttons === 1 && ev.timeStamp) {
-        if (ev.timeStamp - lastTime < 20) return;
+        if (ev.timeStamp - lastTime < 30) return;
         lastTime = ev.timeStamp;
         this.caret.extendSel(ev.clientX, ev.clientY);
       }
@@ -166,12 +167,11 @@ export class EulerEditor extends HTMLElement {
   }
 
   connectedCallback(): void {
-    // EngineSuggestion.loadSympy();
     init().then(() => {
       console.log("Wasm initialized!!");
     });
     this.setAttribute("tabindex", "0");
-    this.append(this.textarea, this.field);
+    this.append(this.field);
     this.textarea.focus();
     this.dispatchEvent(
       new Event("mount", { cancelable: false, bubbles: true, composed: true })
@@ -203,8 +203,12 @@ export class EulerEditor extends HTMLElement {
     if (ev.data === "\\") {
       if (this.caret.isSectionMode()) return;
       Suggestion.textMode = !!this.caret.isTextMode();
-      Suggestion.open([this.caret.x(), this.caret.y()]);
       Suggestion.set();
+      Suggestion.open([
+        this.caret.x(),
+        this.caret.y(),
+        this.caret.elem.getBoundingClientRect().top,
+      ]);
       return;
     }
 
@@ -305,7 +309,7 @@ export class EulerEditor extends HTMLElement {
         MatrixBuilder.set(this.caret.x(), Util.bottom(this.caret.target));
       }
     }
-    if (ev.code == "KeyA" && ev.metaKey) {
+    if (Util.isSelAll(ev)) {
       const atoms = this.root.body;
       this.caret.set(this.root, atoms.length - 1);
       this.caret.setSel([atoms[0], atoms[atoms.length - 1]]);
@@ -420,11 +424,9 @@ export class EulerEditor extends HTMLElement {
         return;
       }
     }
-    if (ev.metaKey && ev.code == "KeyZ") {
-      ev.shiftKey
-        ? redo(this.caret.set, this.caret.setSel)
-        : undo(this.caret.set, this.caret.setSel);
-    }
+    Util.isUndo(ev) && undo(this.caret.set, this.caret.setSel);
+    if (Util.isRedo(ev)) redo(this.caret.set, this.caret.setSel);
+
     if (ev.code == "Backspace") {
       if (MatrixDestructor.view.isOpen()) {
         const mat = this.caret.target.parent as MatrixAtom;

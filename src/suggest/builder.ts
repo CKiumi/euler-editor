@@ -17,6 +17,7 @@ export module Builder {
     const newRow = Array(length)
       .fill(1)
       .map(() => new MathGroup([]));
+    mat.labels.splice(pos, 0, Math.random().toString(32).substring(2));
     mat.rows.splice(pos, 0, newRow);
   };
 

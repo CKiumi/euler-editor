@@ -79,8 +79,10 @@ transform:translate(${x - 1}px,${y}px)`;
 
   setSel = (sel: [anchlor: Atom, offset: Atom] | null) => {
     this.selElem.forEach((elem) => elem.remove());
+
     if (sel && sel[0] == sel[1]) return;
     this.sel = sel;
+
     if (sel === null) {
       EngineSuggestion.reset();
       return;
@@ -114,6 +116,7 @@ transform:translate(${x - 1}px,${y}px)`;
       EngineSuggestion.set(this.getValue(), [
         Util.right(start),
         Util.top(this.target) + rects[0].height,
+        Util.top(this.target),
       ]);
     }
   };
@@ -164,9 +167,6 @@ transform:translate(${x - 1}px,${y}px)`;
         this.exitFrac();
       } else if (this.isBody()) {
         this.exitBody("right");
-      } else if (Util.isSingleBlock(this.target)) {
-        const newAtom = this.target.parent as GroupAtom;
-        this.set(newAtom, newAtom.body.indexOf(this.target));
       } else if (this.isMat()) {
         const mat = this.target.parent as MatrixAtom;
         mat.rows.forEach((row) => {
@@ -180,6 +180,9 @@ transform:translate(${x - 1}px,${y}px)`;
             }
           }
         });
+      } else if (Util.isSingleBlock(this.target)) {
+        const newAtom = this.target.parent as GroupAtom;
+        this.set(newAtom, newAtom.body.indexOf(this.target));
       }
     } else {
       ++this.pos;
@@ -205,10 +208,6 @@ transform:translate(${x - 1}px,${y}px)`;
       } else if (this.isBody()) {
         this.exitBody("left");
         this.set(this.target, this.pos - 1);
-      } else if (Util.isSingleBlock(this.target)) {
-        const newAtom = this.target.parent as GroupAtom;
-        if (!newAtom) return;
-        this.set(newAtom, newAtom.body.indexOf(this.target) - 1);
       } else if (this.isMat()) {
         const mat = this.target.parent as MatrixAtom;
         mat.rows.forEach((row) => {
@@ -222,6 +221,10 @@ transform:translate(${x - 1}px,${y}px)`;
             }
           }
         });
+      } else if (Util.isSingleBlock(this.target)) {
+        const newAtom = this.target.parent as GroupAtom;
+        if (!newAtom) return;
+        this.set(newAtom, newAtom.body.indexOf(this.target) - 1);
       }
     } else {
       const atom = Util.lastChild(cur);
@@ -275,7 +278,7 @@ transform:translate(${x - 1}px,${y}px)`;
       for (const [rowIndex, row] of mat.rows.entries()) {
         const column = row.indexOf(this.target as MathGroup);
         if (column !== -1) {
-          if (rowIndex === mat.children.length - 1) {
+          if (rowIndex === mat.rows.length - 1) {
             return false;
           } else {
             if (!mat.parent) return;

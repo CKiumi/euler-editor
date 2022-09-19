@@ -10,12 +10,6 @@
 * {
   box-sizing: border-box;
 }
-h2 {
-  font-size: 25px;
-}
-.box {
-  background: none !important;
-}
 
 euler-editor {
   padding: 5px;
@@ -54,24 +48,16 @@ euler-editor {
 .EE_textarea {
   position: absolute;
   clip: rect(0 0 0 0);
+  width: 0;
+  height: 0;
+  padding: 0;
 }
 
-button {
-  color: #ddd;
-  background-color: #1976d2;
-  padding: 6px 10px;
-  line-height: 1.75;
-  border-radius: 4px;
-  text-transform: uppercase;
-  border: 0;
-  cursor: pointer;
-  transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
-}
-
-button:hover {
-  background-color: rgb(17, 82, 147);
-}
-
-.inline {
-  line-height: normal !important;
-}
+/* content-visibility disable overflow visible, overflow: auto will show scrollbar when necessary */
+/* overflow-x: auto; for inline-block gives unwanted verticle space*/
+/* .align,
+.display,
+.theorem {
+  content-visibility: auto;
+  overflow-x: auto;
+} */

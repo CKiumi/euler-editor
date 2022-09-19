@@ -126,7 +126,7 @@ export module MatrixDestructor {
 
       case "left":
         Builder.deleteRow(mat, row);
-        return [Math.min(row, mat.children.length - 1), col];
+        return [Math.min(row, mat.rows.length - 1), col];
     }
   };
 }

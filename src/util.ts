@@ -18,6 +18,23 @@ import {
 } from "euler-tex/src/lib";
 
 export module Util {
+  const isMac = navigator.userAgent.includes("Mac");
+
+  export const isSelAll = (ev: KeyboardEvent) => {
+    if (isMac) return ev.metaKey && ev.code == "KeyA";
+    else return ev.ctrlKey && ev.code == "KeyA";
+  };
+
+  export const isUndo = (ev: KeyboardEvent) => {
+    if (isMac) return ev.metaKey && !ev.shiftKey && ev.code == "KeyZ";
+    else return ev.ctrlKey && ev.code == "KeyZ";
+  };
+
+  export const isRedo = (ev: KeyboardEvent) => {
+    if (isMac) return ev.metaKey && ev.shiftKey && ev.code == "KeyZ";
+    else return ev.ctrlKey && ev.code == "KeyY";
+  };
+
   export const parentBlock = (atom: Atom): Atom => {
     if (atom instanceof Article) return atom;
     let parent = atom.parent;

@@ -24,8 +24,10 @@ export module Suggestion {
   export const reset = () => {
     view.close();
   };
-  export const open = (position: [left: number, top: number]) =>
-    view.open(position[0], position[1]);
+
+  export const open = (position: [left: number, top: number, top2: number]) => {
+    view.open(position[0], position[1], position[2]);
+  };
 
   export const set = () => {
     const text = view.input.value;

@@ -34,7 +34,12 @@ export class SuggestView {
 
   at = () => this.list.children[this.pos];
 
-  open(left: number, top: number) {
+  open(left: number, top: number, secTop: number) {
+    const { width, height } = this.elem.getBoundingClientRect();
+    const right = left + width;
+    const bottom = top + height;
+    if (right > window.innerWidth) left -= right - window.innerWidth;
+    if (bottom > window.innerHeight) top = secTop - height;
     this.elem.style.visibility = "unset";
     this.elem.style.transform = `translate(${left}px,${top}px)`;
     this.input.focus();
@@ -52,19 +57,21 @@ export class SuggestView {
   };
 
   up() {
-    const newPos =
-      this.pos === 0 ? this.list.children.length - 1 : this.pos - 1;
-    this.at().classList.remove("focus");
-    this.pos = newPos;
-    this.at().classList.add("focus");
+    this.render(this.pos === 0 ? this.list.children.length - 1 : this.pos - 1);
   }
 
   down() {
-    const newPos =
-      this.pos === this.list.children.length - 1 ? 0 : this.pos + 1;
+    this.render(this.pos === this.list.children.length - 1 ? 0 : this.pos + 1);
+  }
+
+  render(newPos: number) {
     this.at().classList.remove("focus");
     this.pos = newPos;
     this.at().classList.add("focus");
+    const { bottom, top } = this.at().getBoundingClientRect();
+    const rect = this.elem.getBoundingClientRect();
+    if (bottom > rect.bottom) this.elem.scrollTop += bottom - rect.bottom;
+    if (top < rect.top) this.elem.scrollTop -= rect.top - top;
   }
 
   setList = (variable: List[]) => {
@@ -76,6 +83,7 @@ export class SuggestView {
       wrapper.append(preview);
       div.append(text, wrapper);
       div.onclick = () => {
+        console.log("first");
         onClick();
         this.close();
       };
@@ -140,19 +148,23 @@ export class RefView {
   };
 
   up() {
-    const last = this.children().length - 1;
-    const newPos = this.pos === 0 ? last : this.pos - 1;
-    this.at().classList.remove("focus");
-    this.pos = newPos;
-    this.at().classList.add("focus");
+    this.render(this.pos === 0 ? this.children().length - 1 : this.pos - 1);
   }
 
   down() {
-    const last = this.children().length - 1;
-    const newPos = this.pos === last ? 0 : this.pos + 1;
+    this.render(this.pos === this.children().length - 1 ? 0 : this.pos + 1);
+  }
+
+  render(newPos: number) {
     this.at().classList.remove("focus");
     this.pos = newPos;
     this.at().classList.add("focus");
+    const { bottom, top } = this.at().getBoundingClientRect();
+    const rect = this.list.getBoundingClientRect();
+    console.log(bottom, rect.bottom);
+    console.log(this.list.scrollTop);
+    if (bottom > rect.bottom) this.list.scrollTop += bottom - rect.bottom;
+    if (top < rect.top) this.list.scrollTop -= rect.top - top;
   }
 
   setList = (variable: RefList[]) => {

@@ -24,10 +24,12 @@ export module EngineSuggestion {
     view.close();
   };
 
-  export const set = (input: string, position: [left: number, top: number]) => {
+  export const set = (
+    input: string,
+    position: [left: number, top: number, top2: number]
+  ) => {
     try {
       const sympy = latex_to_sympy(input).replaceAll("\\", "\\\\");
-      view.open(position[0], position[1]);
       const list = funcs.map(([suggested, func]) => {
         return {
           text: suggested,
@@ -37,6 +39,7 @@ export module EngineSuggestion {
           },
         };
       });
+      view.open(position[0], position[1], position[2]);
       view.setList(list);
     } catch (error) {
       return;

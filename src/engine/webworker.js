@@ -1,6 +1,7 @@
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.21.2/full/pyodide.js");
 
 async function loadPyodideAndPackages() {
+  console.log = () => undefined;
   self.pyodide = await loadPyodide();
   await self.pyodide.loadPackage(["sympy"]);
   await self.pyodide.runPythonAsync("from sympy import *");
