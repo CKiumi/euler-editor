@@ -1,11 +1,11 @@
-import { Article, Atom, ThmAtom } from "euler-tex/src/lib";
+import { Article, Atom, Theorem } from "euler-tex/src/lib";
 import { Util } from "../util";
 
 export module Pointer {
   export const pointText = (
     x: number,
     y: number,
-    group: Article | ThmAtom
+    group: Article | Theorem
   ): [Atom, number] => {
     if (!group.elem) throw new Error("Expect elem");
     const atoms = group.body;
@@ -17,7 +17,10 @@ export module Pointer {
         if (i === 0) continue;
         break;
       }
-      if (y < Util.bottom(atom)) break;
+      if (y < Util.bottom(atom)) {
+        i = index;
+        break;
+      }
       if (index === atoms.length - 1) return [group, index];
       if (isNewLine(atom, atoms[index + 1])) i = index + 1;
     }

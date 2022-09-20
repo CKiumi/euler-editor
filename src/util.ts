@@ -1,20 +1,18 @@
 import {
-  AccentAtom,
+  Align,
   Article,
   Atom,
-  DisplayAtom,
+  Block,
+  Display,
   FracAtom,
-  GroupAtom,
-  InlineAtom,
+  Group,
+  Inline,
   LRAtom,
   MathGroup,
   MatrixAtom,
-  OverlineAtom,
-  SectionAtom,
-  SqrtAtom,
+  Section,
   SupSubAtom,
-  TextGroup,
-  ThmAtom,
+  Theorem,
 } from "euler-tex/src/lib";
 
 export module Util {
@@ -35,82 +33,60 @@ export module Util {
     else return ev.ctrlKey && ev.code == "KeyY";
   };
 
-  export const parentBlock = (atom: Atom): Atom => {
+  export const parentBlock = (atom: Atom): Block => {
     if (atom instanceof Article) return atom;
     let parent = atom.parent;
     while (parent && !isBlockAtom(parent)) {
       parent = parent.parent;
     }
-    if (!parent) throw new Error("Parent Expected");
+    if (!parent) throw new Error("Parent Block Expected");
     return parent;
+  };
+
+  export const parentMatrix = (atom: Atom): MatrixAtom | null => {
+    let res: Atom | null = atom.parent;
+    while (!(res instanceof MatrixAtom)) {
+      if (!res) return null;
+      res = res.parent;
+    }
+    return res;
   };
 
   export const isMathParent = (
     atom: Atom | null
-  ): atom is InlineAtom | DisplayAtom | MatrixAtom => {
+  ): atom is Inline | Display | Align => {
     return (
-      atom instanceof InlineAtom ||
-      atom instanceof MatrixAtom ||
-      atom instanceof DisplayAtom
+      atom instanceof Inline || atom instanceof Align || atom instanceof Display
     );
   };
 
   export const isSingleBody = (
     atom: Atom | null
-  ): atom is LRAtom | SqrtAtom | AccentAtom | OverlineAtom | DisplayAtom => {
-    return (
-      atom instanceof LRAtom ||
-      atom instanceof SqrtAtom ||
-      atom instanceof AccentAtom ||
-      atom instanceof OverlineAtom ||
-      atom instanceof DisplayAtom
-    );
+  ): atom is Atom & { body: MathGroup } => {
+    return (atom as LRAtom).body instanceof MathGroup;
   };
 
-  export const isBlockAtom = (
-    atom: Atom
-  ): atom is
-    | InlineAtom
-    | ThmAtom
-    | DisplayAtom
-    | SectionAtom
-    | MatrixAtom
-    | Article => {
-    return (
-      atom instanceof InlineAtom ||
-      atom instanceof DisplayAtom ||
-      atom instanceof SectionAtom ||
-      atom instanceof MatrixAtom ||
-      atom instanceof ThmAtom ||
-      atom instanceof Article
-    );
+  export const isBlockAtom = (atom: Atom): atom is Block => {
+    return atom instanceof Block;
   };
 
-  export const isSingleBlock = (
-    atom: Atom
-  ): atom is InlineAtom | SectionAtom | Article | ThmAtom => {
-    return (
-      atom instanceof InlineAtom ||
-      atom instanceof SectionAtom ||
-      atom instanceof Article ||
-      atom instanceof ThmAtom ||
-      atom instanceof MathGroup ||
-      atom instanceof TextGroup
-    );
+  export const isSingleBlock = (atom: Atom): atom is Atom & Group => {
+    return Array.isArray((atom as Inline).body);
   };
 
   export const idLabeled = (a: Atom) => {
     return (
-      a instanceof SectionAtom ||
-      a instanceof ThmAtom ||
-      (a instanceof DisplayAtom && !!a.label) ||
-      (a instanceof MatrixAtom && a.type === "align")
+      a instanceof Section ||
+      a instanceof Theorem ||
+      (a instanceof Display && !!a.label) ||
+      (a instanceof Align && !!a.labels)
     );
   };
 
-  export const firstChild = (atom: Atom): [GroupAtom, number] | null => {
+  export const firstChild = (atom: Atom): [Group & Atom, number] | null => {
     if (isSingleBody(atom)) return [atom.body, 0];
     if (atom instanceof MatrixAtom) return [atom.rows[0][0], 0];
+    if (atom instanceof Align) return [atom.body.rows[0][0], 0];
     if (atom instanceof FracAtom) return [atom.numer, 0];
     if (isSingleBlock(atom)) return [atom, 0];
     if (atom instanceof SupSubAtom) {
@@ -122,8 +98,9 @@ export module Util {
     return null;
   };
 
-  export const lastChild = (atom: Atom): [GroupAtom, number] | null => {
+  export const lastChild = (atom: Atom): [Group, number] | null => {
     if (isSingleBody(atom)) return [atom.body, atom.body.body.length - 1];
+    if (atom instanceof Align) return lastChild(atom.body);
     if (atom instanceof MatrixAtom) {
       const group = atom.rows[0][atom.rows[0].length - 1];
       return [group, group.body.length - 1];

@@ -1,7 +1,8 @@
-import { GroupAtom, MathGroup, MatrixAtom } from "euler-tex/src/lib";
+import { Align, Group, MathGroup, MatrixAtom } from "euler-tex/src/lib";
+import { randStr } from "euler-tex/src/util";
 
 export module Builder {
-  export const getCurRowCol = (atom: GroupAtom, mat: MatrixAtom) => {
+  export const getCurRowCol = (atom: Group, mat: MatrixAtom) => {
     for (const [rowIndex, row] of mat.rows.entries()) {
       const column = row.indexOf(atom as MathGroup);
       if (column !== -1) return [rowIndex, column];
@@ -17,7 +18,12 @@ export module Builder {
     const newRow = Array(length)
       .fill(1)
       .map(() => new MathGroup([]));
-    mat.labels.splice(pos, 0, Math.random().toString(32).substring(2));
+    const parent = mat.parent;
+    if (parent instanceof Align && parent.labels) {
+      const lbl = randStr();
+      parent.labels.splice(pos, 0, lbl);
+      mat.labels.splice(pos, 0, lbl);
+    }
     mat.rows.splice(pos, 0, newRow);
   };
 

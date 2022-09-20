@@ -1,12 +1,12 @@
-import { Atom, GroupAtom } from "euler-tex/src/lib";
+import { Atom, Group } from "euler-tex/src/lib";
 export type SetManager = (
-  target: GroupAtom,
+  target: Group & Atom,
   pos: number,
   render?: boolean
 ) => void;
 export interface Record {
   action: "insert" | "delete";
-  manager: GroupAtom;
+  manager: Group & Atom;
   position: number;
   atoms: Atom[];
   skip?: boolean;

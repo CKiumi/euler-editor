@@ -1,30 +1,33 @@
 import {
-  Article,
   Atom,
-  CharAtom,
-  DisplayAtom,
   FirstAtom,
   FracAtom,
-  GroupAtom,
-  InlineAtom,
+  Group,
   LRAtom,
+  MathAtom,
   MathGroup,
   MatrixAtom,
-  SectionAtom,
   SupSubAtom,
-  ThmAtom,
 } from "euler-tex/src/lib";
 import { setRecord } from "../record";
 import { EngineSuggestion } from "../engine";
 import { Util } from "../util";
 import { Pointer } from "./nav";
+import {
+  Display,
+  Section,
+  Inline,
+  Char,
+  Article,
+  Theorem,
+} from "euler-tex/src/atom/block";
 
 export type Sel = [anchor: number, offset: number];
 type Action = { focus: () => void; blur: () => void; render: () => void };
 export class Caret {
   sel: [anchor: Atom, offset: Atom] | null = null;
   public selElem: HTMLElement[] = [];
-  public target: GroupAtom = new MathGroup([]);
+  public target: Group & Atom = new MathGroup([]);
   public pos = 0;
   constructor(
     public elem: HTMLElement,
@@ -41,15 +44,12 @@ export class Caret {
     if (!elem) throw new Error("Element not found in current pointed atom");
     const rect = elem.getBoundingClientRect();
     let [x, y, h] = [0, 0, 0];
-    if (
-      this.cur() instanceof DisplayAtom ||
-      this.cur() instanceof SectionAtom
-    ) {
+    if (this.cur() instanceof Display || this.cur() instanceof Section) {
       [x, y] = this.toReltiveCoord([rect.x + rect.width, rect.y]);
       h = Util.height(this.cur());
     } else if (
       this.target instanceof MathGroup ||
-      this.target instanceof InlineAtom
+      this.target instanceof Inline
     ) {
       if (!this.target.elem)
         throw new Error("Element not found in current pointed atom");
@@ -73,7 +73,9 @@ transform:translate(${x - 1}px,${y}px)`;
   range() {
     if (!this.sel)
       throw new Error("sel must be specified when calling renge()");
-    const range = this.sel.map((x) => (x.parent as GroupAtom).body.indexOf(x));
+    const range = this.sel.map((x) =>
+      (x.parent as unknown as Group).body.indexOf(x)
+    );
     return range.sort((a, b) => a - b) as [a: number, b: number];
   }
 
@@ -174,14 +176,21 @@ transform:translate(${x - 1}px,${y}px)`;
           if (column !== -1) {
             if (column + 1 === row.length) {
               if (!mat.parent) return;
-              this.set(mat.parent, mat.parent.body.indexOf(mat));
+              if (mat.parent instanceof MathGroup) {
+                this.set(mat.parent, mat.parent.body.indexOf(mat));
+              } else {
+                this.set(
+                  mat.parent.parent as Article,
+                  (mat.parent.parent as Article).body.indexOf(mat.parent)
+                );
+              }
             } else {
               this.set(row[column + 1], 0);
             }
           }
         });
       } else if (Util.isSingleBlock(this.target)) {
-        const newAtom = this.target.parent as GroupAtom;
+        const newAtom = this.target.parent as Group & Atom;
         this.set(newAtom, newAtom.body.indexOf(this.target));
       }
     } else {
@@ -215,20 +224,25 @@ transform:translate(${x - 1}px,${y}px)`;
           if (column !== -1) {
             if (column === 0) {
               if (!mat.parent) return;
-              this.set(mat.parent, mat.parent.body.indexOf(mat) - 1);
+              if (mat.parent instanceof MathGroup) {
+                this.set(mat.parent, mat.parent.body.indexOf(mat) - 1);
+              } else {
+                const target = mat.parent.parent as Article;
+                this.set(target, target.body.indexOf(mat.parent) - 1);
+              }
             } else {
               this.set(row[column - 1], row[column - 1].body.length - 1);
             }
           }
         });
       } else if (Util.isSingleBlock(this.target)) {
-        const newAtom = this.target.parent as GroupAtom;
+        const newAtom = this.target.parent as Group & Atom;
         if (!newAtom) return;
         this.set(newAtom, newAtom.body.indexOf(this.target) - 1);
       }
     } else {
       const atom = Util.lastChild(cur);
-      if (atom) this.set(atom[0], atom[1]);
+      if (atom) this.set(atom[0] as Atom & Group, atom[1]);
       else this.set(this.target, this.pos - 1);
     }
   }
@@ -318,8 +332,8 @@ transform:translate(${x - 1}px,${y}px)`;
     let last = 0;
     for (let i = pos; i > 0; i--) {
       if (
-        (this.target.body[i] as CharAtom).char === "\n" ||
-        this.target.body[i] instanceof DisplayAtom
+        (this.target.body[i] as Char).char === "\n" ||
+        this.target.body[i] instanceof Display
       ) {
         last = i;
         break;
@@ -338,8 +352,8 @@ transform:translate(${x - 1}px,${y}px)`;
     let last = this.target.body.length - 1;
     for (let i = pos; i < this.target.body.length; i++) {
       if (
-        (this.target.body[i] as CharAtom).char === "\n" ||
-        this.target.body[i] instanceof DisplayAtom
+        (this.target.body[i] as Char).char === "\n" ||
+        this.target.body[i] instanceof Display
       ) {
         last = i - 1;
         break;
@@ -427,7 +441,7 @@ transform:translate(${x - 1}px,${y}px)`;
     return [coord[0] - fieldRect.x, coord[1] - fieldRect.y];
   }
 
-  pointAtomHol = (x: number, target: GroupAtom) => {
+  pointAtomHol = (x: number, target: Group & Atom) => {
     this.setSel(null);
     let i = 0;
     while (
@@ -440,12 +454,17 @@ transform:translate(${x - 1}px,${y}px)`;
     this.renderCaret();
   };
 
-  pointAtom = (x: number, y: number, group: GroupAtom, recursive: boolean) => {
+  pointAtom = (
+    x: number,
+    y: number,
+    group: Group & Atom,
+    recursive: boolean
+  ) => {
     if (!group.elem) throw new Error("Expect elem");
     this.setSel(null);
     let [g, i] = [group as Atom, 0];
     [g, i] = Pointer.pointText(x, y, group as Article);
-    if (g instanceof ThmAtom) {
+    if (g instanceof Theorem) {
       group = g;
       [, i] = Pointer.pointText(x, y, g as Article);
     }
@@ -456,7 +475,7 @@ transform:translate(${x - 1}px,${y}px)`;
         else return prev;
       });
 
-      const parent = atom.parent as GroupAtom;
+      const parent = atom.parent as Group & Atom;
       if (parent) this.set(parent, parent.body.indexOf(atom));
       this.action.focus();
     } else this.set(group, i);
@@ -468,7 +487,7 @@ transform:translate(${x - 1}px,${y}px)`;
     const isSupBox = atom instanceof SupSubAtom && !atom.sup;
     const newSupSub = isSupBox
       ? new SupSubAtom(atom.nuc, new MathGroup([]), atom.sub)
-      : new SupSubAtom(atom, new MathGroup([]));
+      : new SupSubAtom(atom as MathAtom, new MathGroup([]));
     this.delete();
     this.insert([newSupSub]);
     this.moveLeft();
@@ -481,7 +500,7 @@ transform:translate(${x - 1}px,${y}px)`;
     const sub = new MathGroup([]);
     const newSupSub = isSubBox
       ? new SupSubAtom(atom.nuc, atom.sup, sub)
-      : new SupSubAtom(atom, undefined, sub);
+      : new SupSubAtom(atom as MathAtom, undefined, sub);
     this.delete();
     this.insert([newSupSub]);
     this.set(sub, 0);
@@ -491,26 +510,32 @@ transform:translate(${x - 1}px,${y}px)`;
   addPar(left: string, right: string) {
     if (this.sel !== null) {
       const range = this.sel.map((x) =>
-        (x.parent as GroupAtom).body.indexOf(x)
+        (x.parent as Group & Atom).body.indexOf(x)
       );
       const [start, end] = range.sort((a, b) => a - b);
       const body = this.target.body.slice(start + 1, end + 1);
-      this.insert([new LRAtom(left as "(", right as ")", new MathGroup(body))]);
+      this.insert([
+        new LRAtom(
+          left as "(",
+          right as ")",
+          new MathGroup(body as MathAtom[])
+        ),
+      ]);
     } else {
       this.insert([new LRAtom(left as "(", right as ")", new MathGroup([]))]);
       this.moveLeft();
     }
   }
 
-  set = (atom: GroupAtom, pos: number, render?: boolean) => {
-    const parentBlock = Util.parentBlock(this.target);
-    if (parentBlock instanceof MatrixAtom) {
-      parentBlock.setGrid(false);
-      render = true;
+  set = (atom: Group & Atom, pos: number, render?: boolean) => {
+    const parentMat = Util.parentMatrix(this.target);
+    if (parentMat) {
+      parentMat.setGrid(false);
+      this.action.render();
     }
     [this.target, this.pos] = [atom, pos];
-    const parent = Util.parentBlock(this.target);
-    if (parent instanceof MatrixAtom) {
+    const parent = Util.parentMatrix(this.target);
+    if (parent) {
       parent.setGrid(true);
       render = true;
     }
@@ -520,21 +545,21 @@ transform:translate(${x - 1}px,${y}px)`;
 
   isTextMode = () => {
     return (
-      this.target instanceof ThmAtom ||
+      this.target instanceof Theorem ||
       this.target instanceof Article ||
-      this.target instanceof SectionAtom
+      this.target instanceof Section
     );
   };
 
   isSectionMode = () => {
-    return Util.parentBlock(this.cur()) instanceof SectionAtom;
+    return Util.parentBlock(this.cur()) instanceof Section;
   };
 
   isDisplayMode = () => {
-    return Util.parentBlock(this.cur()) instanceof DisplayAtom;
+    return Util.parentBlock(this.cur()) instanceof Display;
   };
 
-  isInlineMode = () => Util.parentBlock(this.cur()) instanceof InlineAtom;
+  isInlineMode = () => Util.parentBlock(this.cur()) instanceof Inline;
 
   isSup() {
     if (!(this.target.parent instanceof SupSubAtom)) return false;
@@ -647,7 +672,7 @@ transform:translate(${x - 1}px,${y}px)`;
         "Try exit from LRAtom body, however counld not find parent of LRAtom"
       );
     }
-    const newAtom = body.parent as MathGroup;
+    const newAtom = body.parent as Atom & Group;
     this.set(newAtom, newAtom.body.indexOf(body));
   }
 }

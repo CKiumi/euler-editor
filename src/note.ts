@@ -3,16 +3,16 @@ import "euler-tex/css/eulertex.css";
 import "euler-tex/css/font.css";
 import {
   Article,
-  CharAtom,
-  DisplayAtom,
-  InlineAtom,
+  Char,
+  Display,
+  Inline,
   latexToArticle,
   MathGroup,
   MatrixAtom,
   MidAtom,
   parse,
   prarseMath,
-  SectionAtom,
+  Section,
   setLabels,
   SymAtom,
 } from "euler-tex/src/lib";
@@ -109,13 +109,17 @@ export class EulerEditor extends HTMLElement {
       this.caret.insert(prarseMath(await sympyFn));
     });
     this.addEventListener("focus", () => this.textarea.focus());
-    this.textarea.addEventListener("input", (ev) =>
-      this.input(ev as InputEvent)
-    );
+    this.textarea.addEventListener("input", (ev) => {
+      console.time("input");
+      this.input(ev as InputEvent);
+      console.timeEnd("input");
+    });
 
     this.addEventListener("pointerdown", (ev) => {
       ev.preventDefault();
+      console.time("pointerdown");
       this.onPointerDown(ev);
+      console.timeEnd("pointerdown");
       this.textarea.focus();
     });
     let lastTime = 0;
@@ -182,7 +186,7 @@ export class EulerEditor extends HTMLElement {
     this.caret.elem.style.height = "0px";
     this.root.elem?.remove();
     this.root = latexToArticle(latex);
-    this.root.toBox().toHtml();
+    this.root.render();
     if (this.root.elem) {
       this.field.append(this.root.elem);
       setLabels(this.root.elem);
@@ -215,8 +219,8 @@ export class EulerEditor extends HTMLElement {
     if (this.caret.isTextMode()) {
       if (ev.data === "[") {
         this.caret.insert([
-          new DisplayAtom(new MathGroup(parse("")), null),
-          new CharAtom(" ", "Main-R"),
+          new Display(new MathGroup([]), null),
+          new Char(" ", "Main-R"),
         ]);
         this.render();
         this.caret.moveLeft();
@@ -225,13 +229,13 @@ export class EulerEditor extends HTMLElement {
         return;
       }
       if (ev.data === "$") {
-        this.caret.insert([new InlineAtom(parse(""))]);
+        this.caret.insert([new Inline([])]);
         this.render();
         this.caret.moveLeft();
         this.focus();
         return;
       }
-      const atom = new CharAtom(ev.data, "Main-R");
+      const atom = new Char(ev.data, "Main-R");
       this.caret.insert([atom]);
       return;
     }
@@ -245,6 +249,7 @@ export class EulerEditor extends HTMLElement {
       }
       const atoms = prarseMath(ev.data, true);
       this.caret.insert(atoms);
+
       return;
     }
 
@@ -271,19 +276,16 @@ export class EulerEditor extends HTMLElement {
 
   render = () => {
     this.blur();
-    const prev = this.root.elem;
-    const elem = this.root.toBox().toHtml();
-    if (prev) elem.className = prev.className;
+    Util.parentBlock(this.caret.cur())?.render();
     this.focus();
-    elem && prev?.replaceWith(elem);
-    setLabels(elem);
+    setLabels(this.root.elem);
   };
 
   onKeyDown(ev: KeyboardEvent) {
     this.textarea.style.transform = this.caret.elem.style.transform;
     if (ev.isComposing) return;
     if (ev.code == "Enter" && this.caret.isTextMode()) {
-      const atom = new CharAtom("\n", "Main-R");
+      const atom = new Char("\n", "Main-R");
       this.caret.insert([atom]);
       return;
     }
@@ -379,7 +381,7 @@ export class EulerEditor extends HTMLElement {
       } else if (!this.caret.moveDown()) {
         const x = this.caret.x();
         const parent = Util.parentBlock(this.caret.cur());
-        if (parent instanceof DisplayAtom || parent instanceof SectionAtom) {
+        if (parent instanceof Display || parent instanceof Section) {
           const y = Util.bottom(Util.parentBlock(this.caret.cur())) + 10;
           this.pointAtom([x, y]);
         } else {
@@ -413,7 +415,7 @@ export class EulerEditor extends HTMLElement {
         this.caret.setSel([prev, this.caret.cur()]);
       } else if (!this.caret.moveUp()) {
         const parent = Util.parentBlock(this.caret.cur());
-        if (parent instanceof DisplayAtom || parent instanceof SectionAtom) {
+        if (parent instanceof Display || parent instanceof Section) {
           this.pointAtom([
             this.caret.x(),
             Util.top(Util.parentBlock(this.caret.cur())) - 10,

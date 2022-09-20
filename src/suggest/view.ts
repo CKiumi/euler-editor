@@ -1,4 +1,4 @@
-import { Article, MatrixAtom, SectionAtom } from "euler-tex/src/lib";
+import { Article, MatrixAtom, Section } from "euler-tex/src/lib";
 import { Util } from "../util";
 
 export interface List {
@@ -192,9 +192,7 @@ export class RefView {
 
   atomToList = (atom: Article) => {
     const list: RefList[] = [];
-    const atoms = atom.body.filter((a): a is SectionAtom | MatrixAtom =>
-      Util.idLabeled(a)
-    );
+    const atoms = atom.body.filter((a) => Util.idLabeled(a));
     atoms.forEach((atom) => {
       if (atom instanceof MatrixAtom) {
         if (atom.labels.length === 0 || !atom.elem) return;
@@ -207,8 +205,8 @@ export class RefView {
         });
         return;
       }
-      if (!atom.elem || !atom.label) return;
-      const text = atom.label;
+      if (!atom.elem || !(atom as Section).label) return;
+      const text = (atom as Section).label;
       const preview = atom.elem.cloneNode(true) as HTMLElement;
       list.push({ text, preview });
     });

@@ -11,14 +11,16 @@ test("matrix builder", () => {
       [group, group],
       [targetGroup, group],
     ],
-    "pmatrix"
+    "pmatrix",
+    []
   );
+
   expect(Builder.getCurRowCol(targetGroup, mat)).toEqual([1, 0]);
   expect(() => Builder.addRow(mat, -1)).toThrow();
   expect(() => Builder.addRow(mat, 3)).toThrow();
   expect(() => Builder.deleteRow(mat, 2)).toThrow();
   Builder.addRow(mat, 2);
-
+  console.log(mat.labels[0]);
   expect(mat).toEqual(
     new MatrixAtom([
       [group, group],
