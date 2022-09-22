@@ -118,9 +118,11 @@ export class EulerEditor extends HTMLElement {
     let lastTime = 0;
     this.addEventListener("pointermove", (ev: PointerEvent) => {
       if (ev.buttons === 1 && ev.timeStamp) {
-        if (ev.timeStamp - lastTime < 30) return;
+        if (ev.timeStamp - lastTime < 20) return;
         lastTime = ev.timeStamp;
+        console.time("all");
         this.caret.extendSel(ev.clientX, ev.clientY);
+        console.timeEnd("all");
       }
     });
     this.textarea.addEventListener("keydown", (ev) => this.onKeyDown(ev));

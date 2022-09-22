@@ -80,16 +80,17 @@ transform:translate(${x - 1}px,${y}px)`;
   }
 
   setSel = (sel: [anchlor: Atom, offset: Atom] | null) => {
-    this.selElem.forEach((elem) => elem.remove());
-
-    if (sel && sel[0] == sel[1]) return;
-    this.sel = sel;
-
-    if (sel === null) {
+    if (this.sel && sel && this.sel[0] === sel[0] && this.sel[1] === sel[1]) {
+      return;
+    }
+    const cache = this.selElem;
+    if (sel === null || (sel && sel[0] == sel[1])) {
+      this.sel = null;
+      cache.forEach((elem) => elem.remove());
       EngineSuggestion.reset();
       return;
     }
-
+    this.sel = sel;
     const [start, last] = this.range().map((i) => this.target?.body[i]);
 
     if (!start.elem || !last.elem) return;
@@ -100,25 +101,26 @@ transform:translate(${x - 1}px,${y}px)`;
       start.elem.parentElement
     );
     this.selElem = [];
-
+    const fieldRect = this.field.getBoundingClientRect();
     rects.forEach((rect, i) => {
       const left = i === 0 ? Util.right(start) : rect.left;
       const right = i === rects.length - 1 ? Util.right(last) : rect.right;
-      const [relX, relY] = this.toReltiveCoord([left, rect.top]);
+      const [relX, relY] = [left - fieldRect.x, rect.top - fieldRect.y];
       const div = document.createElement("div");
       div.className = "EE_selection";
       this.selElem.push(div);
-      this.field.prepend(div);
       this.selElem[i].style.height = `${rect.height}px`;
       this.selElem[i].style.transform = `translate(${relX}px,${relY}px)`;
       this.selElem[i].style.width = `${right - left}px`;
     });
-
+    this.selElem.forEach((elem) => this.field.prepend(elem));
+    cache.forEach((elem) => elem.remove());
     if (!this.isTextMode()) {
+      const top = Util.top(this.target);
       EngineSuggestion.set(this.getValue(), [
         Util.right(start),
-        Util.top(this.target) + rects[0].height,
-        Util.top(this.target),
+        top + rects[0].height,
+        top,
       ]);
     }
   };
@@ -368,7 +370,9 @@ transform:translate(${x - 1}px,${y}px)`;
 
   extendSel = (x: number, y: number) => {
     const start = this.sel?.[0] ?? this.cur();
+    console.time("first");
     this.pointAtom(x, y, this.target, false);
+    console.timeEnd("first");
     const last = this.pos;
     this.setSel([start, this.target.body[last]]);
   };
@@ -461,9 +465,10 @@ transform:translate(${x - 1}px,${y}px)`;
     recursive: boolean
   ) => {
     if (!group.elem) throw new Error("Expect elem");
-    this.setSel(null);
     let [g, i] = [group as Atom, 0];
+
     [g, i] = Pointer.pointText(x, y, group as Article);
+
     if (g instanceof Theorem) {
       group = g;
       [, i] = Pointer.pointText(x, y, g as Article);

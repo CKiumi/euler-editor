@@ -8,17 +8,16 @@ const main = document.getElementById("main");
 [1].forEach(() => {
   main!.innerHTML += `
   <euler-editor id="t"></euler-editor>
+  
   `;
 });
 const eulerNote = document.getElementById("t") as EulerEditor;
-
-eulerNote.addEventListener("mount", () => {
-  const abs = String.raw`
+const abs = String.raw`
 \section{Abstract}
 Mathematical analysis on the existence of eigenvalues is essential because it is equivalent to the occurrence of localization, which is an exceptionally crucial property of quantum walks. We construct the method for the eigenvalue problem via the transfer matrix for space-inhomogeneous $n$-state quantum walks in one dimension with 
 $n-2$ self-loops, which is an extension of the technique in a previous study (Quantum Inf. Process 20(5), 2021).
  This method reveals the necessary and sufficient condition for the eigenvalue problem of a two-phase three-state quantum walk with one defect whose time evolution varies in the negative part, positive part, and at the origin. `;
-  const intro = String.raw`
+const intro = String.raw`
 \section{Introduction}
 The research on quantum walks (QWs) began in the early 2000s \cite{Ambainis2001-os,Konno2002-sh}, and QWs play important roles in various fields, and a variety of QW models have been analyzed theoretically and numerically. 
 This paper focuses on the mathematical analysis of discrete-time three-state QWs on the integer lattice, studied intensively by \cite{Inui2005-ry,Wang2015-cl,Endo2019-ie,Rajendran2018-ss,Wang2015-oy,Falcao2021-pb,Saha2021-of}.
@@ -28,7 +27,7 @@ The QW model exhibits localization if and only if there exists an eigenvalue of 
 
 The rest of this paper is organized as follows. In Section \ref{sec:2}, we define $n$-state QWs with $n-2$ self-loops, which is an extension of three-state QWs on the integer lattice. Then, we give the transfer matrix in a general way and construct methods for the eigenvalue problem.
 Theorem \ref{Theorem Ker} is the main theorem, which gives a necessary and sufficient condition for the eigenvalue problem.  Section \ref{sec:3} focuses on the concrete calculation of eigenvalues on one-defect and two-phase three-state QWs with generalized Grover coin matrices. We also show some figures indicating eigenvalues of the time evolution operators and their corresponding probability distributions in this section.`;
-  const sec2 = String.raw`\section{Definitions and Method}
+const sec2 = String.raw`\section{Definitions and Method}
 \label{sec:2}
 \subsection{Multi-state quantum walks on the integer lattice}
 Firstly, we introduce $n$-state QWs with $n-2$ self-loops on the integer lattice $\mathbb{Z}$.
@@ -234,7 +233,7 @@ The method to solve the eigenvalue problem of space-inhomogeneous two-state QWs 
       \end{cases}
       \end{align*}
       with $\varphi\in\ker\left(\left( T_{\infty} -\zeta ^{<}_{\infty }\right) T_{+}\right) \cap \ker\left(\left( T_{-\infty} -\zeta ^{>}_{-\infty }\right) T_{-}\right)\setminus\{\mathbf{0}\}.$ From \cite{Kiumi2021-yg,Kiumi2021-dp}, we can also say that $\dim\ker(U-e^{i\lambda})=1$ under the Assumption \ref{assumption}.`;
-  const sec3 = String.raw`
+const sec3 = String.raw`
 \section{Eigenvalues of three-state Grover walks}
 \label{sec:3} In this section, we focus on the following generalized Grover matrices as the coin matrix, which is the coin matrix studied in \cite{Machida2015-oa} with an additional phase $\Delta_x$.
 \begin{align}
@@ -435,9 +434,10 @@ e^{i\lambda } =\frac{i\left( e^{i\Delta _{p}} -e^{i\Delta _{m}}\right)}{\sqrt{2(
 The examples of proposition \ref{prop:two-phase2}
  are shown in Figures \ref{fig:3}, \ref{fig:4}.
  `;
-  const sum = String.raw`
+const sum = String.raw`
 \section{Summary}
 In this paper, we analyzed eigenvalues of two-phase three-state generalized Grover walks with one defect in one dimension. In Section \ref{sec:2}, we successfully derived Theorem \ref{Theorem Ker} via transfer matrices, which is the necessary and sufficient condition for the eigenvalue problem for $n$-state QWs with $n-2$ self-loops under the Assumption \ref{assumption}. Next, we focused on the eigenvalue problem for three-state generalized Grover walks in Section \ref{sec:3}. Lemma \ref{lemma} revealed that $e^{i\Delta_{\pm\infty}}$ are eigenvalues of $U$, which also indicates that these models always exhibit localization. Subsequently, by applying Theorem \ref{Theorem Ker}, we got the necessary and sufficient condition for the eigenvalue problem and successfully calculated concrete eigenvalues for one-defect model in Propositions \ref{pro:one-defect}, and two-phase models in Propositions \ref{prop:two-phase1} and \ref{prop:two-phase2}.`;
+eulerNote.addEventListener("mount", () => {
   const article = String.raw`${abs}${intro}${sec2}${sec3}${sum}`;
   eulerNote.set(article);
 });

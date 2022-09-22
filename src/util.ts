@@ -196,10 +196,10 @@ export module Util {
     return top + (bottom - top) / 2;
   };
 
-  export const getLineRects = (
-    anchor: HTMLElement,
-    target: HTMLElement,
-    block: HTMLElement
+  export const getLineRects = <T extends Element>(
+    anchor: T,
+    target: T,
+    block: T
   ) => {
     const rects = Array.from(block.getClientRects());
     return rects.filter((rect, i) => {
