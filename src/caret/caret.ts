@@ -1,4 +1,12 @@
 import {
+  Article,
+  Char,
+  Display,
+  Inline,
+  Section,
+  Theorem,
+} from "euler-tex/src/atom/block";
+import {
   Atom,
   FirstAtom,
   FracAtom,
@@ -9,18 +17,10 @@ import {
   MatrixAtom,
   SupSubAtom,
 } from "euler-tex/src/lib";
-import { setRecord } from "../record";
 import { EngineSuggestion } from "../engine";
+import { setRecord } from "../record";
 import { Util } from "../util";
 import { Pointer } from "./nav";
-import {
-  Display,
-  Section,
-  Inline,
-  Char,
-  Article,
-  Theorem,
-} from "euler-tex/src/atom/block";
 
 export type Sel = [anchor: number, offset: number];
 type Action = { focus: () => void; blur: () => void; render: () => void };
@@ -125,8 +125,7 @@ transform:translate(${x - 1}px,${y}px)`;
 
   insert = (atoms: Atom[]) => {
     if (this.sel !== null) return this.replaceRange(atoms, this.range());
-    this.target.body.splice(this.pos + 1, 0, ...atoms);
-    this.action.render();
+    Util.insert(this.target, this.pos, atoms);
     this.set(this.target, this.pos + atoms.length);
     setRecord({
       action: "insert",
@@ -375,7 +374,8 @@ transform:translate(${x - 1}px,${y}px)`;
   };
 
   replaceRange = (newAtoms: Atom[] | null, range: [number, number]) => {
-    const atoms = this.target.body.splice(
+    const atoms = Util.del(
+      this.target,
       range[0] + 1,
       Math.abs(range[1] - range[0])
     );
@@ -387,7 +387,7 @@ transform:translate(${x - 1}px,${y}px)`;
       skip: !!newAtoms,
     });
     if (newAtoms) {
-      this.target.body.splice(range[0] + 1, 0, ...newAtoms);
+      Util.insert(this.target, range[0], newAtoms);
       setRecord({
         action: "insert",
         manager: this.target,
@@ -395,9 +395,9 @@ transform:translate(${x - 1}px,${y}px)`;
         atoms: newAtoms,
         skip: true,
       });
-      this.set(this.target, range[0] + newAtoms.length, true);
+      this.set(this.target, range[0] + newAtoms.length);
     } else {
-      this.set(this.target, range[0], true);
+      this.set(this.target, range[0]);
     }
     this.setSel(null);
   };
@@ -426,14 +426,14 @@ transform:translate(${x - 1}px,${y}px)`;
       }
       return;
     }
-    const atom = this.target.body.splice(this.pos, 1)[0];
+    const atoms = Util.del(this.target, this.pos, 1);
     setRecord({
       action: "delete",
       manager: this.target,
       position: this.pos,
-      atoms: [atom],
+      atoms,
     });
-    this.set(this.target, this.pos - 1, true);
+    this.set(this.target, this.pos - 1);
   }
 
   toReltiveCoord(coord: [number, number]): [number, number] {

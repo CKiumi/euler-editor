@@ -3,6 +3,7 @@ import "euler-tex/css/eulertex.css";
 import "euler-tex/css/font.css";
 import {
   Article,
+  Atom,
   Char,
   Display,
   Inline,
@@ -26,22 +27,14 @@ import { Suggestion } from "./suggest/suggest";
 import { RefView } from "./suggest/view";
 import { Util } from "./util";
 export { loadFont } from "euler-tex/src/lib";
+
 export class EulerEditor extends HTMLElement {
   textarea: HTMLTextAreaElement;
   field: HTMLElement;
   root: Article = new Article([]);
   caret: Caret;
-  fontMode:
-    | "mathbb"
-    | "mathcal"
-    | "mathfrak"
-    | "mathscr"
-    | "mathsf"
-    | "mathtt"
-    | "mathit"
-    | "mathbf"
-    | "mathrm"
-    | null = null;
+  compositions: Atom[] = [];
+  fontMode: keyof typeof FontMap | null = null;
   constructor() {
     super();
     this.append(document.createElement("template").content.cloneNode(true));
@@ -146,26 +139,38 @@ export class EulerEditor extends HTMLElement {
       this.textarea.value = "";
     });
     this.textarea.addEventListener("compositionupdate", (ev) => {
-      while ((this.caret.cur() as SymAtom).style?.composite) {
-        this.caret.target.body.splice(this.caret.pos, 1)[0];
-        this.caret.set(this.caret.target, this.caret.pos - 1);
-      }
-      const atoms = Array.from(ev.data).map(
-        (c) => new SymAtom(null, c, c, ["Main-R"], { composite: true })
-      );
-      this.caret.target.body.splice(this.caret.pos + 1, 0, ...atoms);
-      this.render();
-      this.caret.set(this.caret.target, this.caret.pos + atoms.length);
+      let pos = this.caret.pos;
+      const { length } = this.compositions;
+      Util.del(this.caret.target, pos - length + 1, length);
+      pos -= length;
+      const atoms = Array.from(ev.data).map((c) => {
+        return this.caret.isTextMode()
+          ? new Char(c, null)
+          : new SymAtom("ord", c, c, ["Main-R"]);
+      });
+      Util.insert(this.caret.target, pos, atoms);
+      this.compositions = atoms;
+      atoms.forEach((atom) => {
+        atom.elem && (atom.elem.style.textDecoration = "underline");
+      });
+      pos += atoms.length;
+      this.caret.set(this.caret.target, pos);
     });
 
     this.textarea.addEventListener("compositionend", (ev) => {
-      while ((this.caret.cur() as SymAtom).style?.composite) {
-        this.caret.target.body.splice(this.caret.pos, 1)[0];
-        this.caret.set(this.caret.target, this.caret.pos - 1);
-      }
+      let pos = this.caret.pos;
+      const { length } = this.compositions;
+      Util.del(this.caret.target, pos - length + 1, length);
+      pos -= length;
+      this.caret.set(this.caret.target, pos);
       this.caret.insert(
-        Array.from(ev.data).map((c) => new SymAtom(null, c, c, ["Main-R"]))
+        Array.from(ev.data).map((c) => {
+          return this.caret.isTextMode()
+            ? new Char(c, null)
+            : new SymAtom("ord", c, c, ["Main-R"]);
+        })
       );
+      this.compositions = [];
     });
     this.set("");
   }
@@ -235,7 +240,7 @@ export class EulerEditor extends HTMLElement {
         this.focus();
         return;
       }
-      const atom = new Char(ev.data, "Main-R");
+      const atom = new Char(ev.data, null);
       this.caret.insert([atom]);
       return;
     }

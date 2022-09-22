@@ -116,6 +116,31 @@ export module Util {
     return null;
   };
 
+  export const insert = (target: Group & Atom, pos: number, atoms: Atom[]) => {
+    target.body.splice(pos + 1, 0, ...atoms);
+    if (target instanceof Article) {
+      atoms.forEach((atom, i) => {
+        target.body[pos + i].elem?.insertAdjacentElement(
+          "afterend",
+          (atom as Block).render()
+        );
+        atom.parent = target;
+      });
+    } else parentBlock(target.body[pos]).render();
+  };
+
+  export const del = (
+    target: Group & Atom,
+    pos: number,
+    num: number
+  ): Atom[] => {
+    const atoms = target.body.splice(pos, num);
+    if (target instanceof Article) {
+      atoms.forEach((atom) => atom.elem?.remove());
+    } else parentBlock(target.body[pos]).render();
+    return atoms;
+  };
+
   export const right = (atom: Atom): number => {
     if (!atom.elem) {
       throw new Error("Try to get rect of atom with no element linked");
