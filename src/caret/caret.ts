@@ -1,6 +1,5 @@
 import {
   Article,
-  Char,
   Display,
   Inline,
   Section,
@@ -17,7 +16,7 @@ import {
   MatrixAtom,
   SupSubAtom,
 } from "euler-tex/src/lib";
-import { EngineSuggestion } from "../engine";
+import { Engine } from "../engine";
 import { setRecord } from "../record";
 import { Util } from "../util";
 import { Pointer } from "./nav";
@@ -40,30 +39,22 @@ export class Caret {
   y = () => Util.bottom(this.cur());
   cur = () => this.target.body[this.pos];
   renderCaret = () => {
-    const { elem } = this.cur();
-    if (!elem) throw new Error("Element not found in current pointed atom");
-    const rect = elem.getBoundingClientRect();
-    let [x, y, h] = [0, 0, 0];
-    if (this.cur() instanceof Display || this.cur() instanceof Section) {
-      [x, y] = this.toReltiveCoord([rect.x + rect.width, rect.y]);
-      h = Util.height(this.cur());
-    } else if (
-      this.target instanceof MathGroup ||
-      this.target instanceof Inline
-    ) {
-      if (!this.target.elem)
-        throw new Error("Element not found in current pointed atom");
-      const parentRect = this.target.elem.getBoundingClientRect();
-      [x, y] = this.toReltiveCoord([rect.x + rect.width, parentRect.y]);
-      h = parentRect.height;
+    const curRect = Util.rect(this.cur());
+    let x = curRect.x + curRect.width;
+    let [y, h] = [0, 0];
+    if (Util.isBreakAtom(this.cur())) {
+      const r = Util.rect(this.target.body[this.pos + 1]);
+      [x, y, h] = [r.x, r.y, r.height];
+    } else if (Util.isInlineGroup(this.target)) {
+      const r = Util.rect(this.target);
+      [y, h] = [r.y, r.height];
     } else {
-      const pRect = elem.getBoundingClientRect();
-      [x, y] = this.toReltiveCoord([rect.x + rect.width, pRect.y]);
-      h = pRect.height;
+      [y, h] = [curRect.y, curRect.height];
     }
 
-    this.elem.style.cssText = `height:${h}px; 
-transform:translate(${x - 1}px,${y}px)`;
+    const { x: fx, y: fy } = this.field.getBoundingClientRect();
+    this.elem.style.height = `${h}px`;
+    this.elem.style.transform = `translate(${x - 1 - fx}px,${y - fy}px)`;
     this.elem.style.animation = "none";
     this.elem.offsetWidth;
     this.elem.style.animation = "";
@@ -87,7 +78,7 @@ transform:translate(${x - 1}px,${y}px)`;
     if (sel === null || (sel && sel[0] == sel[1])) {
       this.sel = null;
       cache.forEach((elem) => elem.remove());
-      EngineSuggestion.reset();
+      Engine.reset();
       return;
     }
     this.sel = sel;
@@ -117,7 +108,7 @@ transform:translate(${x - 1}px,${y}px)`;
     cache.forEach((elem) => elem.remove());
     if (!this.isTextMode()) {
       const top = Util.top(this.target);
-      EngineSuggestion.set(this.getValue(), [
+      Engine.set(this.getValue(), [
         Util.right(start),
         top + rects[0].height,
         top,
@@ -126,7 +117,7 @@ transform:translate(${x - 1}px,${y}px)`;
   };
 
   insert = (atoms: Atom[]) => {
-    if (this.sel !== null) return this.replaceRange(atoms, this.range());
+    if (this.sel !== null) return this.replace(atoms, this.range());
     Util.insert(this.target, this.pos, atoms);
     this.set(this.target, this.pos + atoms.length);
     setRecord({
@@ -145,7 +136,7 @@ transform:translate(${x - 1}px,${y}px)`;
 
   cut(ev: ClipboardEvent) {
     this.copy(ev);
-    this.replaceRange(null, this.range());
+    this.replace(null, this.range());
   }
 
   getValue() {
@@ -253,11 +244,11 @@ transform:translate(${x - 1}px,${y}px)`;
     if (this.isSub()) {
       if (!(target.parent instanceof SupSubAtom)) throw new Error("");
       if (target.parent.sup) {
-        this.pointAtomHol(this.x(), target.parent.sup);
+        this.pointHol(this.x(), target.parent.sup);
       }
     } else if (this.isDenom()) {
       if (!(target.parent instanceof FracAtom)) throw new Error("");
-      this.pointAtomHol(this.x(), target.parent.numer);
+      this.pointHol(this.x(), target.parent.numer);
     } else if (this.isMat()) {
       const mat = this.target.parent as MatrixAtom;
       for (const [rowIndex, row] of mat.rows.entries()) {
@@ -267,7 +258,7 @@ transform:translate(${x - 1}px,${y}px)`;
             return false;
           } else {
             if (!mat.parent) return;
-            this.pointAtomHol(this.x(), mat.rows[rowIndex - 1][column]);
+            this.pointHol(this.x(), mat.rows[rowIndex - 1][column]);
             return true;
           }
         }
@@ -283,11 +274,11 @@ transform:translate(${x - 1}px,${y}px)`;
     if (this.isSup()) {
       if (!(target.parent instanceof SupSubAtom)) throw new Error("");
       if (target.parent.sub) {
-        this.pointAtomHol(this.x(), target.parent.sub);
+        this.pointHol(this.x(), target.parent.sub);
       }
     } else if (this.isNumer()) {
       if (!(target.parent instanceof FracAtom)) throw new Error("");
-      this.pointAtomHol(this.x(), target.parent.denom);
+      this.pointHol(this.x(), target.parent.denom);
     } else if (this.isMat()) {
       const mat = this.target.parent as MatrixAtom;
       for (const [rowIndex, row] of mat.rows.entries()) {
@@ -297,7 +288,7 @@ transform:translate(${x - 1}px,${y}px)`;
             return false;
           } else {
             if (!mat.parent) return;
-            this.pointAtomHol(this.x(), mat.rows[rowIndex + 1][column]);
+            this.pointHol(this.x(), mat.rows[rowIndex + 1][column]);
             return true;
           }
         }
@@ -308,76 +299,47 @@ transform:translate(${x - 1}px,${y}px)`;
 
   shiftRight() {
     if (this.isLast()) return;
-    const anchor = this.cur();
+    const anchor = this.sel ? this.sel[0] : this.cur();
     this.set(this.target, this.pos + 1);
-    this.setSel(
-      this.sel === null
-        ? [anchor, this.target.body[this.pos]]
-        : [this.sel[0], this.target.body[this.pos]]
-    );
+    this.setSel([anchor, this.cur()]);
   }
 
   shiftLeft() {
     if (this.isFirst()) return;
-    const pos = this.pos;
-    this.set(this.target, pos - 1);
-    this.setSel(
-      this.sel === null
-        ? [this.target.body[pos], this.target.body[pos - 1]]
-        : [this.sel[0], this.target.body[pos - 1]]
-    );
+    const anchor = this.sel ? this.sel[0] : this.cur();
+    this.set(this.target, this.pos - 1);
+    this.setSel([anchor, this.cur()]);
   }
 
   selectLeft() {
-    const pos = this.pos;
-    let last = 0;
-    for (let i = pos; i > 0; i--) {
-      if (
-        (this.target.body[i] as Char).char === "\n" ||
-        this.target.body[i] instanceof Display
-      ) {
-        last = i;
-        break;
-      }
+    let last;
+    const atoms = this.target.body;
+    const anchor = this.sel ? this.sel[0] : this.cur();
+    for (last = this.pos; last > 0; last--) {
+      if (Util.isBreakAtom(atoms[last])) break;
     }
-    this.setSel(
-      this.sel === null
-        ? [this.target.body[pos], this.target.body[last]]
-        : [this.sel[0], this.target.body[last]]
-    );
+    this.setSel([anchor, atoms[last]]);
     this.set(this.target, last);
   }
 
   selectRight() {
-    const pos = this.pos;
-    let last = this.target.body.length - 1;
-    for (let i = pos; i < this.target.body.length; i++) {
-      if (
-        (this.target.body[i] as Char).char === "\n" ||
-        this.target.body[i] instanceof Display
-      ) {
-        last = i - 1;
-        break;
-      }
+    let last;
+    const atoms = this.target.body;
+    const anchor = this.sel ? this.sel[0] : this.cur();
+    for (last = this.pos; last < atoms.length - 1; last++) {
+      if (Util.isBreakAtom(atoms[last + 1])) break;
     }
-    this.setSel(
-      this.sel === null
-        ? [this.target.body[pos], this.target.body[last]]
-        : [this.sel[0], this.target.body[last]]
-    );
+    this.setSel([anchor, atoms[last]]);
     this.set(this.target, last);
   }
 
   extendSel = (x: number, y: number) => {
-    const start = this.sel?.[0] ?? this.cur();
-    console.time("first");
-    this.pointAtom(x, y, this.target, false);
-    console.timeEnd("first");
-    const last = this.pos;
-    this.setSel([start, this.target.body[last]]);
+    const anchor = this.sel?.[0] ?? this.cur();
+    this.point(x, y, this.target, false);
+    this.setSel([anchor, this.cur()]);
   };
 
-  replaceRange = (newAtoms: Atom[] | null, range: [number, number]) => {
+  replace = (newAtoms: Atom[] | null, range: [number, number]) => {
     const atoms = Util.del(
       this.target,
       range[0] + 1,
@@ -440,12 +402,7 @@ transform:translate(${x - 1}px,${y}px)`;
     this.set(this.target, this.pos - 1);
   }
 
-  toReltiveCoord(coord: [number, number]): [number, number] {
-    const fieldRect = this.field.getBoundingClientRect();
-    return [coord[0] - fieldRect.x, coord[1] - fieldRect.y];
-  }
-
-  pointAtomHol = (x: number, target: Group & Atom) => {
+  pointHol = (x: number, target: Group & Atom) => {
     this.setSel(null);
     let i = 0;
     while (
@@ -458,12 +415,7 @@ transform:translate(${x - 1}px,${y}px)`;
     this.renderCaret();
   };
 
-  pointAtom = (
-    x: number,
-    y: number,
-    group: Group & Atom,
-    recursive: boolean
-  ) => {
+  point = (x: number, y: number, group: Group & Atom, recursive: boolean) => {
     if (!group.elem) throw new Error("Expect elem");
     let [g, i] = [group as Atom, 0];
 
@@ -534,11 +486,11 @@ transform:translate(${x - 1}px,${y}px)`;
 
   set = (atom: Group & Atom, pos: number, render?: boolean) => {
     const parentMat = Util.parentMatrix(this.target);
+    [this.target, this.pos] = [atom, pos];
     if (parentMat) {
       parentMat.setGrid(false);
       this.action.render();
     }
-    [this.target, this.pos] = [atom, pos];
     const parent = Util.parentMatrix(this.target);
     if (parent) {
       parent.setGrid(true);

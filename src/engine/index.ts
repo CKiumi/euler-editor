@@ -2,7 +2,7 @@ import { latex_to_sympy } from "euler-engine";
 import { SuggestView } from "../suggest/view";
 import { Pyodide } from "./pyodide";
 
-export module EngineSuggestion {
+export module Engine {
   export const view = new SuggestView();
   let onSelect: (x: Promise<string>) => void;
   export const init = (onSelected: (x: Promise<string>) => void) => {

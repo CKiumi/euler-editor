@@ -25,6 +25,9 @@ export module Pointer {
       if (isNewLine(atom, atoms[index + 1])) i = index + 1;
     }
     let prevDistance = Infinity;
+    //after line break
+    // const rect = Util.rect(atoms[i]);
+    // if (x < rect.right - rect.width / 2) return [group, i - 1];
     for (let index = i; index < atoms.length; index++) {
       const atom = atoms[index];
       if (Util.isBlockAtom(atom) && Util.isInRect(atom, [x, y])) {

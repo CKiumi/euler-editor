@@ -8,7 +8,6 @@ import {
   Display,
   Inline,
   latexToArticle,
-  MathGroup,
   MatrixAtom,
   MidAtom,
   parse,
@@ -16,11 +15,13 @@ import {
   Section,
   setLabels,
   SymAtom,
+  Theorem,
 } from "euler-tex/src/lib";
 import { FontMap } from "euler-tex/src/parser/command";
 import { Caret } from "./caret/caret";
-import { EngineSuggestion } from "./engine";
-import { MatrixBuilder, MatrixDestructor } from "./mat/mat";
+import { Engine } from "./engine";
+import { KeyBoard } from "./keyboard";
+import { MatBuilder, MatDestructor } from "./mat/mat";
 import { redo, undo } from "./record";
 import { Builder } from "./suggest/builder";
 import { Suggestion } from "./suggest/suggest";
@@ -38,7 +39,6 @@ export class EulerEditor extends HTMLElement {
   constructor() {
     super();
     this.append(document.createElement("template").content.cloneNode(true));
-
     this.field = document.createElement("span");
     this.field.className = "EE_container";
 
@@ -50,12 +50,14 @@ export class EulerEditor extends HTMLElement {
         new SymAtom("ord", ref, ref, ["Main-R"], { ref: true }),
       ]);
     });
+
     this.field.append(
       this.textarea,
+      KeyBoard.elem,
       Suggestion.view.elem,
-      MatrixBuilder.view.elem,
-      MatrixDestructor.view.elem,
-      EngineSuggestion.view.elem,
+      MatBuilder.view.elem,
+      MatDestructor.view.elem,
+      Engine.view.elem,
       ref.elem
     );
     Suggestion.init((font, replace) => {
@@ -98,7 +100,7 @@ export class EulerEditor extends HTMLElement {
     });
     this.caret.target = this.root;
     Suggestion.insert = this.caret.insert;
-    EngineSuggestion.init(async (sympyFn) => {
+    Engine.init(async (sympyFn) => {
       this.caret.insert(prarseMath(await sympyFn));
     });
     this.addEventListener("focus", () => this.textarea.focus());
@@ -224,20 +226,8 @@ export class EulerEditor extends HTMLElement {
     }
 
     if (this.caret.isTextMode()) {
-      if (ev.data === "[") {
-        this.caret.insert([
-          new Display(new MathGroup([]), null),
-          new Char(" ", "Main-R"),
-        ]);
-        this.render();
-        this.caret.moveLeft();
-        this.caret.moveLeft();
-        this.focus();
-        return;
-      }
       if (ev.data === "$") {
         this.caret.insert([new Inline([])]);
-        this.render();
         this.caret.moveLeft();
         this.focus();
         return;
@@ -289,167 +279,149 @@ export class EulerEditor extends HTMLElement {
   };
 
   onKeyDown(ev: KeyboardEvent) {
+    const cmd = KeyBoard.getCmd(ev);
+    this.getAttribute("show-key") && KeyBoard.print(cmd, ev);
     this.textarea.style.transform = this.caret.elem.style.transform;
     if (ev.isComposing) return;
-    if (ev.code == "Enter" && this.caret.isTextMode()) {
-      const atom = new Char("\n", "Main-R");
-      this.caret.insert([atom]);
-      return;
-    }
-    if (ev.code == "Enter" && EngineSuggestion.view.isOpen()) {
-      EngineSuggestion.view.select();
-      return;
-    }
-    if (ev.code == "Enter") {
-      if (MatrixDestructor.view.isOpen()) {
+
+    if (cmd === "enter") {
+      if (this.caret.isTextMode()) {
+        const atom = new Char("\n", "Main-R");
+        this.caret.insert([atom]);
+      }
+      if (Engine.view.isOpen()) {
+        Engine.view.select();
+      }
+      if (MatDestructor.view.isOpen()) {
         return;
       }
-      if (MatrixBuilder.view.isOpen()) {
+      if (MatBuilder.view.isOpen()) {
         const mat = this.caret.target.parent as MatrixAtom;
         const [rowNum, colNum] = Builder.getCurRowCol(this.caret.target, mat);
-        const [newR, newC] = MatrixBuilder.add(mat, rowNum, colNum);
-        MatrixBuilder.reset();
+        const [newR, newC] = MatBuilder.add(mat, rowNum, colNum);
+        MatBuilder.reset();
         this.render();
         this.caret.set(mat.rows[newR][newC], 0);
         return;
       }
-
       if (this.caret.isMat()) {
-        MatrixBuilder.set(this.caret.x(), Util.bottom(this.caret.target));
+        MatBuilder.set(this.caret.x(), Util.bottom(this.caret.target));
       }
     }
-    if (Util.isSelAll(ev)) {
+    if (cmd === "selA") {
       const atoms = this.root.body;
       this.caret.set(this.root, atoms.length - 1);
       this.caret.setSel([atoms[0], atoms[atoms.length - 1]]);
-      return;
     }
+    if (cmd === "extR") this.caret.shiftRight();
+    if (cmd === "selR") this.caret.selectRight();
 
-    if (ev.code == "ArrowRight") {
-      if (MatrixBuilder.view.isOpen()) {
-        MatrixBuilder.view.select("right");
+    if (cmd === "right") {
+      if (MatBuilder.view.isOpen()) {
+        MatBuilder.view.select("right");
         return;
       }
-      if (MatrixDestructor.view.isOpen()) {
-        MatrixDestructor.reset();
+      if (MatDestructor.view.isOpen()) {
+        MatDestructor.reset();
         return;
       }
       if (Suggestion.view.isOpen()) Suggestion.reset();
-      else if (ev.metaKey && ev.shiftKey) this.caret.selectRight();
-      else if (ev.shiftKey) this.caret.shiftRight();
       else {
         this.blur();
         this.caret.moveRight();
         this.focus();
       }
     }
-    if (ev.code == "ArrowLeft") {
-      if (MatrixBuilder.view.isOpen()) {
-        MatrixBuilder.view.select("left");
-        return;
+    if (cmd === "extL") this.caret.shiftLeft();
+    if (cmd === "selL") this.caret.selectLeft();
+    if (cmd === "left") {
+      if (MatBuilder.view.isOpen()) {
+        MatBuilder.view.select("left");
       }
-      if (MatrixDestructor.view.isOpen()) {
-        MatrixDestructor.view.select("left");
-        return;
+      if (MatDestructor.view.isOpen()) {
+        MatDestructor.view.select("left");
       }
-
       if (Suggestion.view.isOpen()) Suggestion.reset();
-      else if (ev.metaKey && ev.shiftKey) this.caret.selectLeft();
-      else if (ev.shiftKey) this.caret.shiftLeft();
       else {
         this.blur();
         this.caret.moveLeft();
         this.focus();
       }
+      return;
     }
-    if (ev.code == "ArrowDown") {
-      if (EngineSuggestion.view.isOpen()) {
-        EngineSuggestion.view.down();
-        return;
+    if (cmd === "extD") {
+      const prev = this.caret.sel?.[0] ?? this.caret.cur();
+      this.caret.point(
+        this.caret.x(),
+        Util.bottom(this.caret.cur()) + 20,
+        this.caret.target,
+        false
+      );
+      this.caret.setSel([prev, this.caret.cur()]);
+      return;
+    }
+    if (cmd === "down") {
+      if (Engine.view.isOpen()) Engine.view.down();
+      if (MatBuilder.view.isOpen()) {
+        MatBuilder.view.select("bottom");
       }
-      if (MatrixBuilder.view.isOpen()) {
-        MatrixBuilder.view.select("bottom");
-        return;
-      }
-      if (MatrixDestructor.view.isOpen()) {
-        MatrixDestructor.reset();
-        return;
-      }
-
-      if (ev.shiftKey) {
-        const prev = this.caret.sel?.[0] ?? this.caret.cur();
-        this.caret.pointAtom(
-          this.caret.x(),
-          Util.bottom(this.caret.cur()) + 20,
-          this.caret.target,
-          false
-        );
-        this.caret.setSel([prev, this.caret.cur()]);
-      } else if (!this.caret.moveDown()) {
+      if (MatDestructor.view.isOpen()) MatDestructor.reset();
+      if (!this.caret.moveDown()) {
         const x = this.caret.x();
         const parent = Util.parentBlock(this.caret.cur());
         if (parent instanceof Display || parent instanceof Section) {
-          const y = Util.bottom(Util.parentBlock(this.caret.cur())) + 10;
-          this.pointAtom([x, y]);
+          this.point([x, Util.bottom(parent) + 10]);
         } else {
-          this.pointAtom([x, Util.bottom(this.caret.cur()) + 10]);
+          this.point([x, Util.bottom(this.caret.cur()) + 10]);
         }
         return;
       }
     }
-    if (ev.code == "ArrowUp") {
-      if (EngineSuggestion.view.isOpen()) {
-        EngineSuggestion.view.up();
-        return;
+    if (cmd === "extU") {
+      const prev = this.caret.sel?.[0] ?? this.caret.cur();
+      this.caret.point(
+        this.caret.x(),
+        Util.top(this.caret.cur()) - 20,
+        this.caret.target,
+        false
+      );
+      this.caret.setSel([prev, this.caret.cur()]);
+    }
+    if (cmd === "up") {
+      if (Engine.view.isOpen()) Engine.view.up();
+      if (MatBuilder.view.isOpen()) {
+        MatBuilder.view.select("top");
       }
-      if (MatrixBuilder.view.isOpen()) {
-        MatrixBuilder.view.select("top");
-        return;
+      if (MatDestructor.view.isOpen()) {
+        MatDestructor.view.select("top");
       }
-      if (MatrixDestructor.view.isOpen()) {
-        MatrixDestructor.view.select("top");
-        return;
-      }
-
-      if (ev.shiftKey) {
-        const prev = this.caret.sel?.[0] ?? this.caret.cur();
-        this.caret.pointAtom(
-          this.caret.x(),
-          Util.top(this.caret.cur()) - 20,
-          this.caret.target,
-          false
-        );
-        this.caret.setSel([prev, this.caret.cur()]);
-      } else if (!this.caret.moveUp()) {
+      if (!this.caret.moveUp()) {
         const parent = Util.parentBlock(this.caret.cur());
         if (parent instanceof Display || parent instanceof Section) {
-          this.pointAtom([
-            this.caret.x(),
-            Util.top(Util.parentBlock(this.caret.cur())) - 10,
-          ]);
+          this.point([this.caret.x(), Util.top(parent) - 10]);
         } else {
-          this.pointAtom([this.caret.x(), Util.top(this.caret.cur()) - 20]);
+          this.point([this.caret.x(), Util.top(this.caret.cur()) - 20]);
         }
         return;
       }
     }
-    Util.isUndo(ev) && undo(this.caret.set, this.caret.setSel);
-    if (Util.isRedo(ev)) redo(this.caret.set, this.caret.setSel);
+    cmd === "undo" && undo(this.caret.set, this.caret.setSel);
+    cmd === "redo" && redo(this.caret.set, this.caret.setSel);
 
-    if (ev.code == "Backspace") {
-      if (MatrixDestructor.view.isOpen()) {
+    if (cmd === "del") {
+      if (MatDestructor.view.isOpen()) {
         const mat = this.caret.target.parent as MatrixAtom;
         const [rowNum, colNum] = Builder.getCurRowCol(this.caret.target, mat);
-        const [newR, newC] = MatrixDestructor.remove(mat, rowNum, colNum);
-        MatrixDestructor.reset();
+        const [newR, newC] = MatDestructor.remove(mat, rowNum, colNum);
+        MatDestructor.reset();
         this.render();
         this.caret.set(mat.rows[newR][newC], 0);
         return;
       } else if (this.caret.isMat() && this.caret.isFirst()) {
-        MatrixDestructor.set(this.caret.x(), Util.bottom(this.caret.target));
+        MatDestructor.set(this.caret.x(), Util.bottom(this.caret.target));
       } else {
         this.caret.sel !== null
-          ? this.caret.replaceRange(null, this.caret.range())
+          ? this.caret.replace(null, this.caret.range())
           : this.caret.delete();
       }
     }
@@ -457,38 +429,27 @@ export class EulerEditor extends HTMLElement {
   onPointerDown(ev: PointerEvent) {
     if (ev.shiftKey) return this.caret.extendSel(ev.clientX, ev.clientY);
     Suggestion.reset();
-    MatrixBuilder.reset();
-    MatrixDestructor.reset();
+    MatBuilder.reset();
+    MatDestructor.reset();
     this.caret.sel = null;
-    this.pointAtom([ev.clientX, ev.clientY]);
+    this.point([ev.clientX, ev.clientY]);
   }
 
-  pointAtom(c: [number, number]) {
+  point(c: [number, number]) {
     this.blur();
     this.caret.setSel(null);
-    if (!this.root.elem) throw new Error("Expect elem");
-    return this.caret.pointAtom(c[0], c[1], this.root, true);
+    return this.caret.point(c[0], c[1], this.root, true);
   }
 
   focus = () => {
-    if (this.caret.isTextMode()) return;
-    if (this.caret.isDisplayMode()) {
-      const { elem } = Util.parentBlock(this.caret.cur());
-      if (!elem) throw new Error("");
-      elem.classList.add("focus");
-    }
-    if (this.caret.isInlineMode()) {
-      const inline = Util.parentBlock(this.caret.cur());
-      if (!inline.elem) throw new Error("");
-      inline.elem.classList.add("focus");
-    }
+    const block = Util.parentBlock(this.caret.cur());
+    if (block instanceof Article || block instanceof Theorem) return;
+    block.elem.classList.add("focus");
   };
 
   blur = () => {
-    let elem = document.getElementsByClassName("inline focus");
-    elem[0] && elem[0].classList.remove("focus");
-    elem = document.getElementsByClassName("display focus");
-    elem[0] && elem[0].classList.remove("focus");
+    const elems = document.querySelectorAll(".focus");
+    elems.forEach((e) => e.classList.remove("focus"));
   };
 }
 

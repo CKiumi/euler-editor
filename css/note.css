@@ -1,4 +1,4 @@
-@keyframes ML__caret-blink {
+@keyframes caret-blink {
   0%,
   100% {
     opacity: 1;
@@ -29,8 +29,7 @@ euler-editor {
   position: absolute;
   height: 30px;
   z-index: 1;
-  content: "";
-  animation: ML__caret-blink 1.05s step-end forwards infinite;
+  animation: caret-blink 1.05s step-end forwards infinite;
 }
 
 .EE_selection {
@@ -51,6 +50,25 @@ euler-editor {
   width: 0;
   height: 0;
   padding: 0;
+}
+
+.keystroke {
+  display: flex;
+  gap: 20px;
+  position: fixed;
+  font-size: 60px;
+  bottom: 20px;
+  right: 20px;
+  border-radius: 20px;
+  z-index: 100;
+  border: 1px solid rgb(42, 42, 42);
+  background: rgb(188, 188, 188);
+}
+
+.keystroke div {
+  padding: 15px;
+  min-width: 1.5em;
+  text-align: center;
 }
 
 /* content-visibility disable overflow visible, overflow: auto will show scrollbar when necessary */

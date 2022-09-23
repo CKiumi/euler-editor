@@ -73,7 +73,7 @@ export class MatDestructerView {
   }
 }
 
-export module MatrixBuilder {
+export module MatBuilder {
   export const view = new MatBuilderView();
 
   export const reset = () => {
@@ -103,7 +103,7 @@ export module MatrixBuilder {
   };
 }
 
-export module MatrixDestructor {
+export module MatDestructor {
   export const view = new MatDestructerView();
 
   export const reset = () => {

@@ -3,6 +3,7 @@ import {
   Article,
   Atom,
   Block,
+  Char,
   Display,
   FracAtom,
   Group,
@@ -12,27 +13,11 @@ import {
   MatrixAtom,
   Section,
   SupSubAtom,
+  TextGroup,
   Theorem,
 } from "euler-tex/src/lib";
 
 export module Util {
-  const isMac = navigator.userAgent.includes("Mac");
-
-  export const isSelAll = (ev: KeyboardEvent) => {
-    if (isMac) return ev.metaKey && ev.code == "KeyA";
-    else return ev.ctrlKey && ev.code == "KeyA";
-  };
-
-  export const isUndo = (ev: KeyboardEvent) => {
-    if (isMac) return ev.metaKey && !ev.shiftKey && ev.code == "KeyZ";
-    else return ev.ctrlKey && ev.code == "KeyZ";
-  };
-
-  export const isRedo = (ev: KeyboardEvent) => {
-    if (isMac) return ev.metaKey && ev.shiftKey && ev.code == "KeyZ";
-    else return ev.ctrlKey && ev.code == "KeyY";
-  };
-
   export const parentBlock = (atom: Atom): Block => {
     if (atom instanceof Article) return atom;
     let parent = atom.parent;
@@ -70,6 +55,16 @@ export module Util {
     return atom instanceof Block;
   };
 
+  export const isBreakAtom = (atom: Atom) => {
+    return (
+      (atom as Char).char === "\n" ||
+      atom instanceof Display ||
+      atom instanceof Align ||
+      atom instanceof Section ||
+      atom instanceof Theorem
+    );
+  };
+
   export const isSingleBlock = (atom: Atom): atom is Atom & Group => {
     return Array.isArray((atom as Inline).body);
   };
@@ -80,6 +75,14 @@ export module Util {
       a instanceof Theorem ||
       (a instanceof Display && !!a.label) ||
       (a instanceof Align && !!a.labels)
+    );
+  };
+
+  export const isInlineGroup = (atom: Atom) => {
+    return (
+      atom instanceof MathGroup ||
+      atom instanceof Inline ||
+      atom instanceof TextGroup
     );
   };
 
@@ -137,77 +140,62 @@ export module Util {
     const atoms = target.body.splice(pos, num);
     if (target instanceof Article) {
       atoms.forEach((atom) => atom.elem?.remove());
-    } else parentBlock(target.body[pos]).render();
+    } else parentBlock(target.body[0]).render();
     return atoms;
   };
 
-  export const right = (atom: Atom): number => {
+  export const rect = (atom: Atom): DOMRect => {
     if (!atom.elem) {
       throw new Error("Try to get rect of atom with no element linked");
     }
-    return atom.elem.getBoundingClientRect().right;
+    return atom.elem.getBoundingClientRect();
+  };
+
+  export const right = (atom: Atom): number => {
+    return rect(atom).right;
   };
 
   export const left = (atom: Atom): number => {
-    if (!atom.elem) {
-      throw new Error("Try to get rect of atom with no element linked");
-    }
-    return atom.elem.getBoundingClientRect().left;
+    return rect(atom).left;
   };
 
   export const top = (atom: Atom): number => {
-    if (!atom.elem) {
-      throw new Error("Try to get rect of atom with no element linked");
-    }
-    return atom.elem.getBoundingClientRect().top;
+    return rect(atom).top;
   };
 
   export const bottom = (atom: Atom): number => {
-    if (!atom.elem) {
-      throw new Error("Try to get rect of atom with no element linked");
-    }
-    return atom.elem.getBoundingClientRect().bottom;
+    return rect(atom).bottom;
   };
 
   export const isInRect = (
     atom: Atom,
     coord: [x: number, y: number]
   ): boolean => {
-    if (!atom.elem) {
-      throw new Error("Try to get rect of atom with no element linked");
-    }
     const [x, y] = coord;
-    const { top, bottom, right, left } = atom.elem.getBoundingClientRect();
+    const { top, bottom, right, left } = rect(atom);
     return top < y && bottom > y && right > x && left < x;
   };
 
   export const height = (atom: Atom): number => {
-    if (!atom.elem) {
-      throw new Error("Try to get rect of atom with no element linked");
-    }
-    return atom.elem.getBoundingClientRect().height;
+    return rect(atom).height;
   };
 
   export const yCenter = (atom: Atom): number => {
-    if (!atom.elem) {
-      throw new Error("Try to get rect of atom with no element linked");
-    }
-    const { top, bottom } = atom.elem.getBoundingClientRect();
+    const { top, bottom } = rect(atom);
     return top + (bottom - top) / 2;
   };
 
-  export const getLineRects = <T extends Element>(
-    anchor: T,
-    target: T,
-    block: T
+  export const getLineRects = (
+    anchor: Element,
+    target: Element,
+    block: Element
   ) => {
+    const anchorY = anchor.getBoundingClientRect().y;
+    const targetY = target.getBoundingClientRect().y;
     const rects = Array.from(block.getClientRects());
     return rects.filter((rect, i) => {
-      if (i === 0) return rect.bottom > anchor.getBoundingClientRect().y;
-      return (
-        rect.bottom > anchor.getBoundingClientRect().y &&
-        rects[i - 1].bottom <= target.getBoundingClientRect().y
-      );
+      if (i === 0) return rect.bottom > anchorY;
+      return rect.bottom > anchorY && rects[i - 1].bottom <= targetY;
     });
   };
 }

@@ -7,7 +7,7 @@ loadFont();
 const main = document.getElementById("main");
 [1].forEach(() => {
   main!.innerHTML += `
-  <euler-editor id="t"></euler-editor>
+  <euler-editor id="t" show-key="true"></euler-editor>
   
   `;
 });
