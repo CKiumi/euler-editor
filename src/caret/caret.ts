@@ -1,5 +1,6 @@
 import {
   Article,
+  Block,
   Display,
   Inline,
   Section,
@@ -7,6 +8,7 @@ import {
 } from "euler-tex/src/atom/block";
 import {
   Atom,
+  Delims,
   FirstAtom,
   FracAtom,
   Group,
@@ -17,12 +19,12 @@ import {
   SupSubAtom,
 } from "euler-tex/src/lib";
 import { Engine } from "../engine";
-import { setRecord } from "../record";
+import { record, setRecord } from "../record";
 import { Util } from "../util";
 import { Pointer } from "./nav";
 
 export type Sel = [anchor: number, offset: number];
-type Action = { focus: () => void; blur: () => void; render: () => void };
+type Action = { focus: () => void; blur: () => void; setLabel: () => void };
 export class Caret {
   sel: [anchor: Atom, offset: Atom] | null = null;
   public selElem: HTMLElement[] = [];
@@ -32,17 +34,17 @@ export class Caret {
     public elem: HTMLElement,
     public field: HTMLElement,
     public action: Action
-  ) {
-    this.elem.style.height = "0";
-  }
+  ) {}
   x = () => Util.right(this.cur());
-  y = () => Util.bottom(this.cur());
+  y = () => Util.top(this.cur());
+  bottom = () => Util.bottom(this.cur());
   cur = () => this.target.body[this.pos];
+
   renderCaret = () => {
     const curRect = Util.rect(this.cur());
     let x = curRect.x + curRect.width;
     let [y, h] = [0, 0];
-    if (Util.isBreakAtom(this.cur())) {
+    if (Util.isBreakAtom(this.cur()) && !this.isLast()) {
       const r = Util.rect(this.target.body[this.pos + 1]);
       [x, y, h] = [r.x, r.y, r.height];
     } else if (Util.isInlineGroup(this.target)) {
@@ -51,14 +53,12 @@ export class Caret {
     } else {
       [y, h] = [curRect.y, curRect.height];
     }
-
     const { x: fx, y: fy } = this.field.getBoundingClientRect();
     this.elem.style.height = `${h}px`;
     this.elem.style.transform = `translate(${x - 1 - fx}px,${y - fy}px)`;
     this.elem.style.animation = "none";
     this.elem.offsetWidth;
     this.elem.style.animation = "";
-    return true;
   };
 
   range() {
@@ -119,13 +119,9 @@ export class Caret {
   insert = (atoms: Atom[]) => {
     if (this.sel !== null) return this.replace(atoms, this.range());
     Util.insert(this.target, this.pos, atoms);
+    setRecord({ action: "insert", manager: this.target, pos: this.pos, atoms });
+    this.action.setLabel();
     this.set(this.target, this.pos + atoms.length);
-    setRecord({
-      action: "insert",
-      manager: this.target,
-      position: this.pos - atoms.length,
-      atoms,
-    });
   };
 
   copy(ev: ClipboardEvent) {
@@ -149,39 +145,35 @@ export class Caret {
   }
 
   moveRight() {
+    const target = this.target;
     if (this.sel !== null) {
-      this.set(this.target, this.range()[1]);
+      this.set(target, this.range()[1]);
       this.setSel(null);
       return;
     }
     if (this.isLast()) {
-      if (this.isSup() || this.isSub()) {
+      if (Util.isSup(target) || Util.isSub(target)) {
         this.exitSupSub("right");
-      } else if (this.isNumer() || this.isDenom()) {
-        this.exitFrac();
-      } else if (this.isBody()) {
+      } else if (Util.isNumer(target) || Util.isDenom(target)) {
+        this.exitFrac(target.parent);
+      } else if (Util.isBody(target)) {
         this.exitBody("right");
-      } else if (this.isMat()) {
-        const mat = this.target.parent as MatrixAtom;
-        mat.rows.forEach((row) => {
-          const column = row.indexOf(this.target as MathGroup);
-          if (column !== -1) {
-            if (column + 1 === row.length) {
-              if (!mat.parent) return;
-              if (mat.parent instanceof MathGroup) {
-                this.set(mat.parent, mat.parent.body.indexOf(mat));
-              } else {
-                this.set(
-                  mat.parent.parent as Article,
-                  (mat.parent.parent as Article).body.indexOf(mat.parent)
-                );
-              }
-            } else {
-              this.set(row[column + 1], 0);
-            }
+      } else if (Util.isMat(target)) {
+        const mat = target.parent;
+        const [ri, ci] = Util.findIndexInMat(target);
+        if (ci + 1 === mat.rows[ri].length) {
+          if (mat.parent instanceof MathGroup) {
+            this.set(mat.parent, mat.parent.body.indexOf(mat));
+          } else {
+            if (!mat.parent) return;
+            const root = mat.parent.parent as Article;
+            this.set(root, root.body.indexOf(mat.parent));
           }
-        });
-      } else if (Util.isSingleBlock(this.target)) {
+        } else this.set(mat.rows[ri][ci + 1], 0);
+      } else if (
+        Util.isSingleBlock(this.target) &&
+        !(this.target instanceof Article)
+      ) {
         const newAtom = this.target.parent as Group & Atom;
         this.set(newAtom, newAtom.body.indexOf(this.target));
       }
@@ -194,43 +186,39 @@ export class Caret {
   }
 
   moveLeft() {
+    const { target } = this;
     if (this.sel !== null) {
-      this.set(this.target, this.range()[0]);
+      this.set(target, this.range()[0]);
       this.setSel(null);
       return;
     }
     const cur = this.cur();
     if (this.isFirst()) {
-      if (this.isSup() || this.isSub()) {
+      if (Util.isSup(target) || Util.isSub(target)) {
         this.exitSupSub("left");
-      } else if (this.isNumer() || this.isDenom()) {
-        this.exitFrac();
+      } else if (Util.isNumer(target) || Util.isDenom(target)) {
+        this.exitFrac(target.parent);
         this.set(this.target, this.pos - 1);
-      } else if (this.isBody()) {
+      } else if (Util.isBody(target)) {
         this.exitBody("left");
         this.set(this.target, this.pos - 1);
-      } else if (this.isMat()) {
-        const mat = this.target.parent as MatrixAtom;
-        mat.rows.forEach((row) => {
-          const column = row.indexOf(this.target as MathGroup);
-          if (column !== -1) {
-            if (column === 0) {
-              if (!mat.parent) return;
-              if (mat.parent instanceof MathGroup) {
-                this.set(mat.parent, mat.parent.body.indexOf(mat) - 1);
-              } else {
-                const target = mat.parent.parent as Article;
-                this.set(target, target.body.indexOf(mat.parent) - 1);
-              }
-            } else {
-              this.set(row[column - 1], row[column - 1].body.length - 1);
-            }
+      } else if (Util.isMat(target)) {
+        const mat = target.parent;
+        const [ri, ci] = Util.findIndexInMat(target);
+        if (ci === 0) {
+          if (mat.parent instanceof MathGroup) {
+            this.set(mat.parent, mat.parent.body.indexOf(mat) - 1);
+          } else if (mat.parent) {
+            const root = mat.parent.parent as Article;
+            this.set(root, root.body.indexOf(mat.parent) - 1);
           }
-        });
-      } else if (Util.isSingleBlock(this.target)) {
-        const newAtom = this.target.parent as Group & Atom;
+        } else {
+          this.set(mat.rows[ri][ci - 1], mat.rows[ri][ci - 1].body.length - 1);
+        }
+      } else if (Util.isSingleBlock(target)) {
+        const newAtom = target.parent as Group & Atom;
         if (!newAtom) return;
-        this.set(newAtom, newAtom.body.indexOf(this.target) - 1);
+        this.set(newAtom, newAtom.body.indexOf(target) - 1);
       }
     } else {
       const atom = Util.lastChild(cur);
@@ -241,27 +229,24 @@ export class Caret {
 
   moveUp() {
     const target = this.target;
-    if (this.isSub()) {
-      if (!(target.parent instanceof SupSubAtom)) throw new Error("");
-      if (target.parent.sup) {
-        this.pointHol(this.x(), target.parent.sup);
+    if (Util.isSub(target)) {
+      const supsub = target.parent as SupSubAtom;
+      if (supsub.sup) {
+        const atoms = supsub.sup.body;
+        this.set(...Pointer.nearestAtom(this.x(), this.y(), atoms));
       }
-    } else if (this.isDenom()) {
+    } else if (Util.isDenom(target)) {
       if (!(target.parent instanceof FracAtom)) throw new Error("");
-      this.pointHol(this.x(), target.parent.numer);
-    } else if (this.isMat()) {
-      const mat = this.target.parent as MatrixAtom;
-      for (const [rowIndex, row] of mat.rows.entries()) {
-        const column = row.indexOf(this.target as MathGroup);
-        if (column !== -1) {
-          if (rowIndex === 0) {
-            return false;
-          } else {
-            if (!mat.parent) return;
-            this.pointHol(this.x(), mat.rows[rowIndex - 1][column]);
-            return true;
-          }
-        }
+      const atoms = target.parent.numer.body;
+      this.set(...Pointer.nearestAtom(this.x(), this.y(), atoms));
+    } else if (Util.isMat(target)) {
+      const { rows } = target.parent as MatrixAtom;
+      const [ri, ci] = Util.findIndexInMat(target);
+      if (ri === 0) return false;
+      else {
+        const atoms = rows[ri - 1][ci].body;
+        this.set(...Pointer.nearestAtom(this.x(), this.y(), atoms));
+        return true;
       }
     } else {
       return false;
@@ -271,27 +256,22 @@ export class Caret {
 
   moveDown() {
     const target = this.target;
-    if (this.isSup()) {
-      if (!(target.parent instanceof SupSubAtom)) throw new Error("");
-      if (target.parent.sub) {
-        this.pointHol(this.x(), target.parent.sub);
+    if (Util.isSup(target)) {
+      const supsub = target.parent as SupSubAtom;
+      if (supsub.sub) {
+        const atoms = supsub.sub.body;
+        this.set(...Pointer.nearestAtom(this.x(), this.bottom(), atoms));
       }
-    } else if (this.isNumer()) {
-      if (!(target.parent instanceof FracAtom)) throw new Error("");
-      this.pointHol(this.x(), target.parent.denom);
-    } else if (this.isMat()) {
-      const mat = this.target.parent as MatrixAtom;
-      for (const [rowIndex, row] of mat.rows.entries()) {
-        const column = row.indexOf(this.target as MathGroup);
-        if (column !== -1) {
-          if (rowIndex === mat.rows.length - 1) {
-            return false;
-          } else {
-            if (!mat.parent) return;
-            this.pointHol(this.x(), mat.rows[rowIndex + 1][column]);
-            return true;
-          }
-        }
+    } else if (Util.isNumer(target)) {
+      const atoms = target.parent.denom.body;
+      this.set(...Pointer.nearestAtom(this.x(), this.bottom(), atoms));
+    } else if (Util.isMat(target)) {
+      const [ri, ci] = Util.findIndexInMat(target);
+      if (ri === target.parent.rows.length - 1) return false;
+      else {
+        const atoms = target.parent.rows[ri + 1][ci].body;
+        this.set(...Pointer.nearestAtom(this.x(), this.bottom(), atoms));
+        return true;
       }
     } else return false;
     return true;
@@ -335,20 +315,17 @@ export class Caret {
 
   extendSel = (x: number, y: number) => {
     const anchor = this.sel?.[0] ?? this.cur();
-    this.point(x, y, this.target, false);
+    this.pointInBlock(x, y, this.target);
     this.setSel([anchor, this.cur()]);
   };
 
   replace = (newAtoms: Atom[] | null, range: [number, number]) => {
-    const atoms = Util.del(
-      this.target,
-      range[0] + 1,
-      Math.abs(range[1] - range[0])
-    );
+    const [start, num] = [range[0] + 1, Math.abs(range[1] - range[0])];
+    const atoms = Util.del(this.target, start, num);
     setRecord({
       action: "delete",
       manager: this.target,
-      position: range[0] + 1,
+      pos: start,
       atoms,
       skip: !!newAtoms,
     });
@@ -357,35 +334,32 @@ export class Caret {
       setRecord({
         action: "insert",
         manager: this.target,
-        position: range[0],
+        pos: range[0],
         atoms: newAtoms,
         skip: true,
       });
+      this.action.setLabel();
       this.set(this.target, range[0] + newAtoms.length);
-    } else {
-      this.set(this.target, range[0]);
-    }
+    } else this.set(this.target, range[0]);
     this.setSel(null);
   };
 
   delete() {
     if (this.isFirst()) {
-      if (this.isSup() && this.isEmpty()) {
+      if (Util.isSup(this.target) && this.isEmpty()) {
         this.moveRight();
         const supsub = this.cur() as SupSubAtom;
-        if (supsub.sub) {
-          supsub.sup = undefined;
-        } else {
+        if (supsub.sub) supsub.sup = undefined;
+        else {
           this.delete();
           this.insert([supsub.nuc]);
         }
       }
-      if (this.isSub() && this.isEmpty()) {
+      if (Util.isSub(this.target) && this.isEmpty()) {
         this.moveRight();
         const supsub = this.cur() as SupSubAtom;
-        if (supsub.sup) {
-          supsub.sub = undefined;
-        } else {
+        if (supsub.sup) supsub.sub = undefined;
+        else {
           this.delete();
           this.insert([supsub.nuc]);
         }
@@ -393,49 +367,26 @@ export class Caret {
       return;
     }
     const atoms = Util.del(this.target, this.pos, 1);
-    setRecord({
-      action: "delete",
-      manager: this.target,
-      position: this.pos,
-      atoms,
-    });
+    setRecord({ action: "delete", manager: this.target, pos: this.pos, atoms });
+    this.action.setLabel();
     this.set(this.target, this.pos - 1);
   }
 
-  pointHol = (x: number, target: Group & Atom) => {
-    this.setSel(null);
-    let i = 0;
-    while (
-      target.body[i + 1] &&
-      (Util.right(target.body[i]) + Util.right(target.body[i + 1])) / 2 < x
-    ) {
-      i++;
-    }
-    this.set(target, i);
-    this.renderCaret();
+  point = (x: number, y: number, root: Article) => {
+    let [g, i]: [Block, number | null] = Pointer.pointText(x, y, root);
+    if (g instanceof Theorem) [g, i] = Pointer.pointText(x, y, g as Article);
+    if (i === null) this.set(...Pointer.nearestAtom(x, y, g.children()));
+    else this.set(g as unknown as Group & Atom, i);
+    this.action.focus();
   };
 
-  point = (x: number, y: number, group: Group & Atom, recursive: boolean) => {
-    if (!group.elem) throw new Error("Expect elem");
-    let [g, i] = [group as Atom, 0];
-
-    [g, i] = Pointer.pointText(x, y, group as Article);
-
-    if (g instanceof Theorem) {
-      group = g;
-      [, i] = Pointer.pointText(x, y, g as Article);
-    }
-
-    if (recursive) {
-      const atom = group.body[i].children().reduce((prev, cur) => {
-        if (Pointer.d(cur, [x, y]) <= Pointer.d(prev, [x, y])) return cur;
-        else return prev;
-      });
-
-      const parent = atom.parent as Group & Atom;
-      if (parent) this.set(parent, parent.body.indexOf(atom));
+  pointInBlock = (x: number, y: number, group: Group & Atom) => {
+    if (group instanceof Article || group instanceof Theorem) {
+      const [g, i] = Pointer.pointText(x, y, group);
+      if (i === null) this.set(group, group.body.indexOf(g));
+      else this.set(g as unknown as Group & Atom, i);
       this.action.focus();
-    } else this.set(group, i);
+    } else this.set(...Pointer.nearestAtom(x, y, group.body));
   };
 
   addSup() {
@@ -464,39 +415,29 @@ export class Caret {
     this.renderCaret();
   }
 
-  addPar(left: string, right: string) {
+  addPar(left: Delims, right: Delims) {
     if (this.sel !== null) {
-      const range = this.sel.map((x) =>
-        (x.parent as Group & Atom).body.indexOf(x)
-      );
-      const [start, end] = range.sort((a, b) => a - b);
+      const [start, end] = this.range();
       const body = this.target.body.slice(start + 1, end + 1);
-      this.insert([
-        new LRAtom(
-          left as "(",
-          right as ")",
-          new MathGroup(body as MathAtom[])
-        ),
-      ]);
+      this.insert([new LRAtom(left, right, new MathGroup(body as MathAtom[]))]);
     } else {
-      this.insert([new LRAtom(left as "(", right as ")", new MathGroup([]))]);
+      this.insert([new LRAtom(left, right, new MathGroup([]))]);
       this.moveLeft();
     }
   }
 
-  set = (atom: Group & Atom, pos: number, render?: boolean) => {
+  set = (atom: Group & Atom, pos: number) => {
     const parentMat = Util.parentMatrix(this.target);
-    [this.target, this.pos] = [atom, pos];
     if (parentMat) {
       parentMat.setGrid(false);
-      this.action.render();
+      Util.render(parentMat);
     }
+    [this.target, this.pos] = [atom, pos];
     const parent = Util.parentMatrix(this.target);
     if (parent) {
       parent.setGrid(true);
-      render = true;
+      Util.render(parent);
     }
-    if (render) this.action.render();
     this.renderCaret();
   };
 
@@ -507,129 +448,95 @@ export class Caret {
       this.target instanceof Section
     );
   };
-
-  isSectionMode = () => {
-    return Util.parentBlock(this.cur()) instanceof Section;
-  };
-
-  isDisplayMode = () => {
-    return Util.parentBlock(this.cur()) instanceof Display;
-  };
-
+  isSectionMode = () => Util.parentBlock(this.cur()) instanceof Section;
+  isDisplayMode = () => Util.parentBlock(this.cur()) instanceof Display;
   isInlineMode = () => Util.parentBlock(this.cur()) instanceof Inline;
-
-  isSup() {
-    if (!(this.target.parent instanceof SupSubAtom)) return false;
-    return this.target === this.target.parent.sup;
-  }
-
-  isSub() {
-    if (!(this.target.parent instanceof SupSubAtom)) return false;
-    return this.target === this.target.parent.sub;
-  }
-
-  isNumer() {
-    if (!(this.target.parent instanceof FracAtom)) return false;
-    return this.target === this.target.parent.numer;
-  }
-
-  isDenom() {
-    if (!(this.target.parent instanceof FracAtom)) return false;
-    return this.target === this.target.parent.denom;
-  }
-
-  isBody() {
-    if (!this.target.parent) return false;
-    return Util.isSingleBody(this.target.parent);
-  }
-
-  isMat() {
-    const { parent } = this.target;
-    return parent instanceof MatrixAtom;
-  }
-
-  isEmpty() {
-    return this.target.body.length === 1;
-  }
-
-  isFirst() {
-    return this.pos === 0;
-  }
-
-  isLast() {
-    return this.pos === this.target.body.length - 1;
-  }
-
+  isEmpty = () => this.target.body.length === 1;
+  isFirst = () => this.pos === 0;
+  isLast = () => this.pos === this.target.body.length - 1;
   exitSupSub(direction: "left" | "right") {
-    const supsub = this.target.parent;
-    if (!(supsub instanceof SupSubAtom)) {
-      throw new Error(
-        "Try exit from sup, however counld not find SupSubAtom as parent"
-      );
+    const spb = this.target.parent;
+    if (!(spb instanceof SupSubAtom)) {
+      throw new Error("counld not find SupSubAtom as parent");
     }
-
-    if (direction === "left" && supsub.nuc instanceof LRAtom) {
-      this.set(supsub.nuc.body, supsub.nuc.body.body.length - 1);
+    if (direction === "left" && spb.nuc instanceof LRAtom) {
+      this.set(spb.nuc.body, spb.nuc.body.body.length - 1);
       return;
     }
-
-    if (!supsub.parent) {
-      throw new Error(
-        "Try exit from sup, however could not find parent of SupSubAtom"
-      );
-    }
-    const newAtom = supsub.parent;
-    if (direction === "left") {
-      this.set(newAtom, newAtom.body.indexOf(supsub) - 1);
-    } else {
-      this.set(newAtom, newAtom.body.indexOf(supsub));
-    }
+    if (!spb.parent) throw new Error("Exprect parent of SupSubAtom");
+    const atom = spb.parent;
+    this.set(atom, atom.body.indexOf(spb) - (direction === "left" ? 1 : 0));
   }
 
-  exitFrac() {
-    const frac = this.target.parent;
-    if (!(frac instanceof FracAtom)) {
-      throw new Error(
-        "Try exit from numer, however counld not find FracAtom as parent"
-      );
-    }
-    if (!(frac.parent instanceof MathGroup)) {
-      throw new Error(
-        "Try exit from denom, however counld not find parent of FracAtom"
-      );
-    }
-    const newAtom = frac.parent;
-    this.set(newAtom, newAtom.body.indexOf(frac));
+  exitFrac(frac: FracAtom) {
+    if (!frac.parent) throw new Error("Counld not find parent of FracAtom");
+    this.set(frac.parent, frac.parent.body.indexOf(frac));
   }
 
   exitBody(direction: "left" | "right") {
     const body = this.target.parent;
     if (!Util.isSingleBody(body)) {
-      throw new Error(
-        "Try exit from Single body atom, however counld not find Single body atom as parent"
-      );
+      throw new Error("Counld not find Single body atom as parent");
     }
     if (body.parent instanceof SupSubAtom) {
       if (direction === "left") {
-        const newAtom = body.parent.parent;
-        if (!newAtom) throw new Error("");
-        this.set(newAtom, newAtom.body.indexOf(body.parent));
+        const atom = body.parent.parent as Group & Atom;
+        this.set(atom, atom.body.indexOf(body.parent));
       } else {
         const { sup, sub } = body.parent;
         if (sup) this.set(sup, 0);
         else if (sub) this.set(sub, 0);
         else throw new Error("Either Sup or Sub must exist");
       }
-
       return;
     }
-
-    if (!body.parent) {
-      throw new Error(
-        "Try exit from LRAtom body, however counld not find parent of LRAtom"
-      );
-    }
-    const newAtom = body.parent as Atom & Group;
-    this.set(newAtom, newAtom.body.indexOf(body));
+    const atom = body.parent as Atom & Group;
+    this.set(atom, atom.body.indexOf(body));
   }
+
+  redo = (once?: boolean) => {
+    if (record.index === record.data.length - 1) return;
+    const { action, manager, pos, atoms } = record.data[record.index + 1];
+    if (action === "insert") {
+      Util.insert(manager, pos, atoms);
+      this.action.setLabel();
+      this.set(manager, pos + atoms.length);
+    }
+    if (action === "delete") {
+      this.setSel(null);
+      Util.del(manager, pos, atoms.length);
+      this.action.setLabel();
+      this.set(manager, pos - 1);
+    }
+    record.index += 1;
+    if (once) return;
+    if (record.data[record.index].skip) this.redo(true);
+  };
+
+  undo = (once?: boolean) => {
+    if (record.index === -1) return;
+    const { action, manager, pos, atoms } = record.data[record.index];
+    this.setSel(null);
+    if (action === "insert") {
+      Util.del(manager, pos + 1, atoms.length);
+      this.action.setLabel();
+      this.set(manager, pos);
+    }
+    if (action === "delete") {
+      Util.insert(manager, pos - 1, atoms);
+      this.action.setLabel();
+      if (atoms.length > 1) {
+        this.setSel([
+          manager.body[pos - 1],
+          manager.body[pos + atoms.length - 1],
+        ]);
+        this.set(manager, pos - 1);
+      } else {
+        this.set(manager, pos);
+      }
+    }
+    record.index -= 1;
+    if (once) return;
+    if (record.data[record.index + 1].skip) this.undo(true);
+  };
 }

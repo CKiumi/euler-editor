@@ -83,7 +83,6 @@ export class SuggestView {
       wrapper.append(preview);
       div.append(text, wrapper);
       div.onclick = () => {
-        console.log("first");
         onClick();
         this.close();
       };
@@ -161,8 +160,6 @@ export class RefView {
     this.at().classList.add("focus");
     const { bottom, top } = this.at().getBoundingClientRect();
     const rect = this.list.getBoundingClientRect();
-    console.log(bottom, rect.bottom);
-    console.log(this.list.scrollTop);
     if (bottom > rect.bottom) this.list.scrollTop += bottom - rect.bottom;
     if (top < rect.top) this.list.scrollTop -= rect.top - top;
   }

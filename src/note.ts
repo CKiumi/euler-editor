@@ -12,6 +12,7 @@ import {
   MidAtom,
   parse,
   prarseMath,
+  Ref,
   Section,
   setLabels,
   SymAtom,
@@ -22,7 +23,6 @@ import { Caret } from "./caret/caret";
 import { Engine } from "./engine";
 import { KeyBoard } from "./keyboard";
 import { MatBuilder, MatDestructor } from "./mat/mat";
-import { redo, undo } from "./record";
 import { Builder } from "./suggest/builder";
 import { Suggestion } from "./suggest/suggest";
 import { RefView } from "./suggest/view";
@@ -47,7 +47,9 @@ export class EulerEditor extends HTMLElement {
     const ref = new RefView((ref: string) => {
       this.textarea.focus();
       this.caret.insert([
-        new SymAtom("ord", ref, ref, ["Main-R"], { ref: true }),
+        this.caret.isTextMode()
+          ? new Ref(ref, null)
+          : new SymAtom("ord", ref, ref, ["Main-R"], { ref: true }),
       ]);
     });
 
@@ -96,7 +98,7 @@ export class EulerEditor extends HTMLElement {
     this.caret = new Caret(caret, this.field, {
       focus: this.focus,
       blur: this.blur,
-      render: this.render,
+      setLabel: this.setLabel,
     });
     this.caret.target = this.root;
     Suggestion.insert = this.caret.insert;
@@ -149,7 +151,7 @@ export class EulerEditor extends HTMLElement {
       pos -= length;
       const atoms = Array.from(ev.data).map((c) => {
         return this.caret.isTextMode()
-          ? new Char(c, null)
+          ? new Char(c === " " ? "\u00A0" : c, null)
           : new SymAtom("ord", c, c, ["Main-R"]);
       });
       Util.insert(this.caret.target, pos, atoms);
@@ -170,7 +172,7 @@ export class EulerEditor extends HTMLElement {
       this.caret.insert(
         Array.from(ev.data).map((c) => {
           return this.caret.isTextMode()
-            ? new Char(c, null)
+            ? new Char(c === " " ? "\u00A0" : c, null)
             : new SymAtom("ord", c, c, ["Main-R"]);
         })
       );
@@ -232,7 +234,7 @@ export class EulerEditor extends HTMLElement {
         this.focus();
         return;
       }
-      const atom = new Char(ev.data, null);
+      const atom = new Char(ev.data === " " ? "\u00A0" : ev.data, null);
       this.caret.insert([atom]);
       return;
     }
@@ -271,10 +273,7 @@ export class EulerEditor extends HTMLElement {
     Suggestion.reset();
   }
 
-  render = () => {
-    this.blur();
-    Util.parentBlock(this.caret.cur())?.render();
-    this.focus();
+  setLabel = () => {
     setLabels(this.root.elem);
   };
 
@@ -292,19 +291,18 @@ export class EulerEditor extends HTMLElement {
       if (Engine.view.isOpen()) {
         Engine.view.select();
       }
-      if (MatDestructor.view.isOpen()) {
-        return;
-      }
+      if (MatDestructor.view.isOpen()) return;
+
       if (MatBuilder.view.isOpen()) {
         const mat = this.caret.target.parent as MatrixAtom;
         const [rowNum, colNum] = Builder.getCurRowCol(this.caret.target, mat);
         const [newR, newC] = MatBuilder.add(mat, rowNum, colNum);
+        Util.render(this.caret.target);
         MatBuilder.reset();
-        this.render();
         this.caret.set(mat.rows[newR][newC], 0);
         return;
       }
-      if (this.caret.isMat()) {
+      if (Util.isMat(this.caret.target)) {
         MatBuilder.set(this.caret.x(), Util.bottom(this.caret.target));
       }
     }
@@ -337,9 +335,11 @@ export class EulerEditor extends HTMLElement {
     if (cmd === "left") {
       if (MatBuilder.view.isOpen()) {
         MatBuilder.view.select("left");
+        return;
       }
       if (MatDestructor.view.isOpen()) {
         MatDestructor.view.select("left");
+        return;
       }
       if (Suggestion.view.isOpen()) Suggestion.reset();
       else {
@@ -351,19 +351,22 @@ export class EulerEditor extends HTMLElement {
     }
     if (cmd === "extD") {
       const prev = this.caret.sel?.[0] ?? this.caret.cur();
-      this.caret.point(
+      this.caret.pointInBlock(
         this.caret.x(),
         Util.bottom(this.caret.cur()) + 20,
-        this.caret.target,
-        false
+        this.caret.target
       );
       this.caret.setSel([prev, this.caret.cur()]);
       return;
     }
     if (cmd === "down") {
-      if (Engine.view.isOpen()) Engine.view.down();
+      if (Engine.view.isOpen()) {
+        Engine.view.down();
+        return;
+      }
       if (MatBuilder.view.isOpen()) {
         MatBuilder.view.select("bottom");
+        return;
       }
       if (MatDestructor.view.isOpen()) MatDestructor.reset();
       if (!this.caret.moveDown()) {
@@ -379,21 +382,25 @@ export class EulerEditor extends HTMLElement {
     }
     if (cmd === "extU") {
       const prev = this.caret.sel?.[0] ?? this.caret.cur();
-      this.caret.point(
+      this.caret.pointInBlock(
         this.caret.x(),
         Util.top(this.caret.cur()) - 20,
-        this.caret.target,
-        false
+        this.caret.target
       );
       this.caret.setSel([prev, this.caret.cur()]);
     }
     if (cmd === "up") {
-      if (Engine.view.isOpen()) Engine.view.up();
+      if (Engine.view.isOpen()) {
+        Engine.view.up();
+        return;
+      }
       if (MatBuilder.view.isOpen()) {
         MatBuilder.view.select("top");
+        return;
       }
       if (MatDestructor.view.isOpen()) {
         MatDestructor.view.select("top");
+        return;
       }
       if (!this.caret.moveUp()) {
         const parent = Util.parentBlock(this.caret.cur());
@@ -405,8 +412,8 @@ export class EulerEditor extends HTMLElement {
         return;
       }
     }
-    cmd === "undo" && undo(this.caret.set, this.caret.setSel);
-    cmd === "redo" && redo(this.caret.set, this.caret.setSel);
+    cmd === "undo" && this.caret.undo();
+    cmd === "redo" && this.caret.redo();
 
     if (cmd === "del") {
       if (MatDestructor.view.isOpen()) {
@@ -414,10 +421,10 @@ export class EulerEditor extends HTMLElement {
         const [rowNum, colNum] = Builder.getCurRowCol(this.caret.target, mat);
         const [newR, newC] = MatDestructor.remove(mat, rowNum, colNum);
         MatDestructor.reset();
-        this.render();
+        Util.render(this.caret.target);
         this.caret.set(mat.rows[newR][newC], 0);
         return;
-      } else if (this.caret.isMat() && this.caret.isFirst()) {
+      } else if (Util.isMat(this.caret.target) && this.caret.isFirst()) {
         MatDestructor.set(this.caret.x(), Util.bottom(this.caret.target));
       } else {
         this.caret.sel !== null
@@ -438,7 +445,7 @@ export class EulerEditor extends HTMLElement {
   point(c: [number, number]) {
     this.blur();
     this.caret.setSel(null);
-    return this.caret.point(c[0], c[1], this.root, true);
+    return this.caret.point(c[0], c[1], this.root);
   }
 
   focus = () => {

@@ -1,4 +1,4 @@
-import { Article, Atom, Theorem } from "euler-tex/src/lib";
+import { Article, Atom, Block, Char, Group, Theorem } from "euler-tex/src/lib";
 import { Util } from "../util";
 
 export module Pointer {
@@ -6,8 +6,7 @@ export module Pointer {
     x: number,
     y: number,
     group: Article | Theorem
-  ): [Atom, number] => {
-    if (!group.elem) throw new Error("Expect elem");
+  ): [Block, number | null] => {
     const atoms = group.body;
     if (atoms.length === 1) return [group, 0];
     //search for line
@@ -25,13 +24,17 @@ export module Pointer {
       if (isNewLine(atom, atoms[index + 1])) i = index + 1;
     }
     let prevDistance = Infinity;
+
     //after line break
-    // const rect = Util.rect(atoms[i]);
-    // if (x < rect.right - rect.width / 2) return [group, i - 1];
+    if (atoms[i] instanceof Char) {
+      const rect = Util.rect(atoms[i]);
+      if (x < rect.right - rect.width / 2) return [group, i - 1];
+    }
+
     for (let index = i; index < atoms.length; index++) {
       const atom = atoms[index];
       if (Util.isBlockAtom(atom) && Util.isInRect(atom, [x, y])) {
-        return [atom, index];
+        return [atom, null];
       }
       const newDistance = d(atom, [x, y]);
       if (newDistance < prevDistance) {
@@ -42,6 +45,19 @@ export module Pointer {
       if (isNewLine(atom, atoms[index + 1])) break;
     }
     return [group, i];
+  };
+
+  export const nearestAtom = (
+    x: number,
+    y: number,
+    atoms: Atom[]
+  ): [Group & Atom, number] => {
+    const atom = atoms.reduce((prev, cur) => {
+      if (d(cur, [x, y]) <= d(prev, [x, y])) return cur;
+      else return prev;
+    });
+    const parent = atom.parent as Group & Atom;
+    return [parent, parent.body.indexOf(atom)];
   };
 
   const isNewLine = (atom: Atom, next: Atom): boolean => {

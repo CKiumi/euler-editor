@@ -33,6 +33,7 @@ export class MatBuilderView {
   }
 
   select(direction: "left" | "right" | "top" | "bottom") {
+    console.log(direction);
     this[this.direction].className = "";
     this.direction = direction;
     this[direction].className = "focus";
@@ -52,7 +53,6 @@ export class MatDestructerView {
     this.elem.style.visibility = "hidden";
     this.elem.append(this.left, this.top);
     this.elem.addEventListener("pointerdown", (ev) => ev.stopPropagation());
-    this.select("left");
   }
 
   isOpen = () => this.elem.style.visibility !== "hidden";
@@ -60,6 +60,7 @@ export class MatDestructerView {
   open(left: number, top: number) {
     this.elem.style.visibility = "unset";
     this.elem.style.transform = `translate(${left}px,${top}px)`;
+    this.select("left");
   }
 
   close() {
@@ -77,12 +78,12 @@ export module MatBuilder {
   export const view = new MatBuilderView();
 
   export const reset = () => {
-    view.select("bottom");
     view.close();
   };
 
   export const set = (left: number, top: number) => {
     view.open(left, top);
+    view.select("bottom");
   };
 
   export const add = (mat: MatrixAtom, row: number, col: number) => {

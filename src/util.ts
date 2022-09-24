@@ -48,11 +48,18 @@ export module Util {
   export const isSingleBody = (
     atom: Atom | null
   ): atom is Atom & { body: MathGroup } => {
-    return (atom as LRAtom).body instanceof MathGroup;
+    return (atom as LRAtom)?.body instanceof MathGroup;
   };
 
   export const isBlockAtom = (atom: Atom): atom is Block => {
-    return atom instanceof Block;
+    return (
+      atom instanceof Article ||
+      atom instanceof Section ||
+      atom instanceof Theorem ||
+      atom instanceof Inline ||
+      atom instanceof Display ||
+      atom instanceof Align
+    );
   };
 
   export const isBreakAtom = (atom: Atom) => {
@@ -86,6 +93,21 @@ export module Util {
     );
   };
 
+  export const isSup = (g: Group & Atom) => g === (g.parent as SupSubAtom)?.sup;
+  export const isSub = (g: Group & Atom) => g === (g.parent as SupSubAtom)?.sub;
+
+  export const isNumer = (g: Atom): g is Atom & { parent: FracAtom } =>
+    g === (g.parent as FracAtom)?.numer;
+
+  export const isDenom = (g: Atom): g is Atom & { parent: FracAtom } =>
+    g === (g.parent as FracAtom)?.denom;
+
+  export const isBody = (g: Group & Atom) => !!isSingleBody(g.parent);
+
+  export const isMat = (
+    g: Group & Atom
+  ): g is MathGroup & { parent: MatrixAtom } => g.parent instanceof MatrixAtom;
+
   export const firstChild = (atom: Atom): [Group & Atom, number] | null => {
     if (isSingleBody(atom)) return [atom.body, 0];
     if (atom instanceof MatrixAtom) return [atom.rows[0][0], 0];
@@ -117,6 +139,19 @@ export module Util {
       else throw new Error("SupSubAtom must have sup or sub");
     }
     return null;
+  };
+
+  export const findIndexInMat = (group: MathGroup): [number, number] => {
+    const mat = group.parent as MatrixAtom;
+    for (const [ri, row] of mat.rows.entries()) {
+      const ci = row.indexOf(group);
+      if (ci !== -1) return [ri, ci];
+    }
+    return [0, 0];
+  };
+
+  export const render = (target: Atom) => {
+    parentBlock(target).render();
   };
 
   export const insert = (target: Group & Atom, pos: number, atoms: Atom[]) => {
