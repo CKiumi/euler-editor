@@ -57,7 +57,7 @@ euler-editor {
   gap: 20px;
   position: fixed;
   font-size: 60px;
-  bottom: 20px;
+  top: 20px;
   right: 20px;
   border-radius: 20px;
   z-index: 100;

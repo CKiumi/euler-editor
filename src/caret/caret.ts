@@ -124,17 +124,6 @@ export class Caret {
     this.set(this.target, this.pos + atoms.length);
   };
 
-  copy(ev: ClipboardEvent) {
-    const latex = this.getValue();
-    if (latex) ev.clipboardData?.setData("text/plain", latex);
-    ev.preventDefault();
-  }
-
-  cut(ev: ClipboardEvent) {
-    this.copy(ev);
-    this.replace(null, this.range());
-  }
-
   getValue() {
     if (this.sel === null) return "";
     const [start, end] = this.range();

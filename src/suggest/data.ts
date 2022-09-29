@@ -69,22 +69,18 @@ export const candidates: [string, string, string][] = [
 ];
 
 export const candidates2: [string, string, string][] = [
-  ["\\section", "\\section{Section}", "\\section{Section}"],
-  ["\\subsection", "\\subsection{sub}", "\\subsection{Sub Section}"],
-  [
-    "\\subsubsection",
-    "\\subsubsection{subsub}",
-    "\\subsubsection{Sub Sub Section}",
-  ],
+  ["\\section", "\\section{Section}", "\\section{}"],
+  ["\\subsection", "\\subsection{sub}", "\\subsection{}"],
+  ["\\subsubsection", "\\subsubsection{subsub}", "\\subsubsection{}"],
   [
     "equation",
     "\\begin{equation}x=y\\end{equation}",
-    "\\begin{equation}x=y\\end{equation}",
+    "\\begin{equation}\\end{equation}",
   ],
   [
     "equation*",
     "\\begin{equation*}x=y\\end{equation*}",
-    "\\begin{equation*}x=y\\end{equation*}",
+    "\\begin{equation*}\\end{equation*}",
   ],
   [
     "align",

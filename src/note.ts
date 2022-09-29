@@ -34,6 +34,7 @@ export class EulerEditor extends HTMLElement {
   field: HTMLElement;
   root: Article = new Article([]);
   caret: Caret;
+  engineRunning = false;
   compositions: Atom[] = [];
   fontMode: keyof typeof FontMap | null = null;
   constructor() {
@@ -101,9 +102,10 @@ export class EulerEditor extends HTMLElement {
       setLabel: this.setLabel,
     });
     this.caret.target = this.root;
-    Suggestion.insert = this.caret.insert;
     Engine.init(async (sympyFn) => {
+      this.engineRunning = true;
       this.caret.insert(prarseMath(await sympyFn));
+      this.engineRunning = false;
     });
     this.addEventListener("focus", () => this.textarea.focus());
     this.textarea.addEventListener("input", (ev) => {
@@ -130,16 +132,20 @@ export class EulerEditor extends HTMLElement {
       }
     });
     this.textarea.addEventListener("keydown", (ev) => this.onKeyDown(ev));
-    this.textarea.addEventListener("cut", (ev) => this.caret.cut(ev));
-    this.textarea.addEventListener("copy", (ev) => this.caret.copy(ev));
+    this.textarea.addEventListener("cut", (ev) => {
+      ev.preventDefault();
+      ev.clipboardData?.setData("text/plain", this.caret.getValue());
+      this.caret.replace(null, this.caret.range());
+    });
+    this.textarea.addEventListener("copy", (ev) => {
+      ev.preventDefault();
+      ev.clipboardData?.setData("text/plain", this.caret.getValue());
+    });
     this.textarea.addEventListener("paste", (ev) => {
       const latex = ev.clipboardData
         ? ev.clipboardData.getData("text/plain")
         : "";
-      const atoms = Util.isMathParent(Util.parentBlock(this.caret.cur()))
-        ? prarseMath(latex, true)
-        : parse(latex);
-      this.caret.insert(atoms);
+      this.insert(latex);
     });
     this.textarea.addEventListener("compositionstart", () => {
       this.textarea.value = "";
@@ -202,10 +208,18 @@ export class EulerEditor extends HTMLElement {
       this.field.append(this.root.elem);
       setLabels(this.root.elem);
     }
+    this.caret.set(this.root, this.root.body.length - 1);
   };
 
   getLatex = (): string => {
     return this.root.serialize();
+  };
+
+  insert = (latex: string) => {
+    const atoms = this.caret.isTextMode()
+      ? parse(latex)
+      : prarseMath(latex, true);
+    this.caret.insert(atoms);
   };
 
   input(ev: InputEvent) {
@@ -214,7 +228,6 @@ export class EulerEditor extends HTMLElement {
       Suggestion.reset();
       return;
     }
-
     if (ev.data === "\\") {
       if (this.caret.isSectionMode()) return;
       Suggestion.textMode = !!this.caret.isTextMode();
@@ -278,6 +291,7 @@ export class EulerEditor extends HTMLElement {
   };
 
   onKeyDown(ev: KeyboardEvent) {
+    console.log(ev.key, ev.metaKey, ev.shiftKey);
     const cmd = KeyBoard.getCmd(ev);
     this.getAttribute("show-key") && KeyBoard.print(cmd, ev);
     this.textarea.style.transform = this.caret.elem.style.transform;

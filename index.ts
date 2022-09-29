@@ -2,13 +2,13 @@
 import { loadFont } from "euler-tex/src/lib";
 import "./src/engine/pyodide";
 import EulerEditor from "./src/note";
+import { Auto } from "./src/auto";
 loadFont();
 
 const main = document.getElementById("main");
 [1].forEach(() => {
   main!.innerHTML += `
   <euler-editor id="t" show-key="true"></euler-editor>
-  
   `;
 });
 const eulerNote = document.getElementById("t") as EulerEditor;
@@ -437,7 +437,44 @@ The examples of proposition \ref{prop:two-phase2}
 const sum = String.raw`
 \section{Summary}
 In this paper, we analyzed eigenvalues of two-phase three-state generalized Grover walks with one defect in one dimension. In Section \ref{sec:2}, we successfully derived Theorem \ref{Theorem Ker} via transfer matrices, which is the necessary and sufficient condition for the eigenvalue problem for $n$-state QWs with $n-2$ self-loops under the Assumption \ref{assumption}. Next, we focused on the eigenvalue problem for three-state generalized Grover walks in Section \ref{sec:3}. Lemma \ref{lemma} revealed that $e^{i\Delta_{\pm\infty}}$ are eigenvalues of $U$, which also indicates that these models always exhibit localization. Subsequently, by applying Theorem \ref{Theorem Ker}, we got the necessary and sufficient condition for the eigenvalue problem and successfully calculated concrete eigenvalues for one-defect model in Propositions \ref{pro:one-defect}, and two-phase models in Propositions \ref{prop:two-phase1} and \ref{prop:two-phase2}.`;
-eulerNote.addEventListener("mount", () => {
+eulerNote.addEventListener("mount", async () => {
   const article = String.raw`${abs}${intro}${sec2}${sec3}${sum}`;
   eulerNote.set(article);
+  const auto = new Auto(eulerNote, 1);
+  await auto.selectAll();
+  await auto.keydown("Backspace");
+  await auto.section();
+  await auto.write("Let's insert inline math equation ");
+  await auto.inline();
+  await auto.eq();
+  await auto.matrix();
+  await auto.matrix();
+  await auto.write("=");
+  await auto.left();
+  await auto.selectLeft();
+  await auto.copy();
+  await auto.right();
+  await auto.right();
+  await auto.paste();
+  await auto.extendLeft();
+  await auto.extendLeft();
+  await auto.keydown("Enter");
+  await auto.waitEngine();
+  await auto.right();
+  await auto.right();
+  await auto.eq2();
+  await auto.matrix();
+  await auto.left();
+  await auto.keydown("Enter");
+  await auto.keydown("Enter");
+  await auto.keydown("Backspace");
+  await auto.keydown("Backspace");
+  await auto.keydown("Backspace");
+  await auto.up();
+  await auto.keydown("Backspace");
+  await auto.right();
+  await auto.right();
+  await auto.leftToStart();
+  await auto.leftToEnd();
+  await auto.deleteToStart();
 });

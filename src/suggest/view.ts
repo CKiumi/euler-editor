@@ -24,6 +24,7 @@ export class SuggestView {
       this.input.type = "text";
       this.elem.append(this.input);
     }
+    this.elem.style.visibility = "hidden";
     this.elem.className = "suggestion";
     this.list.className = "list";
     this.elem.append(this.list);

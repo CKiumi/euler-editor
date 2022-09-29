@@ -1,10 +1,9 @@
-import { Atom, MathLatexToHtml } from "euler-tex/src/lib";
+import { MathLatexToHtml } from "euler-tex/src/lib";
 import { candidates, candidates2 } from "./data";
 import { SuggestView } from "./view";
 
 export module Suggestion {
   export const view = new SuggestView(true);
-  export let insert: (atoms: Atom[]) => void;
   // eslint-disable-next-line prefer-const
   export let textMode = false;
   export let onSelected: (name: string, replace: string) => void;
