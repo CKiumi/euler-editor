@@ -74,20 +74,20 @@ export class MatDestructerView {
   }
 }
 
-export module MatBuilder {
-  export const view = new MatBuilderView();
+export class MatBuilder {
+  view = new MatBuilderView();
 
-  export const reset = () => {
-    view.close();
+  reset = () => {
+    this.view.close();
   };
 
-  export const set = (left: number, top: number) => {
-    view.open(left, top);
-    view.select("bottom");
+  set = (left: number, top: number) => {
+    this.view.open(left, top);
+    this.view.select("bottom");
   };
 
-  export const add = (mat: MatrixAtom, row: number, col: number) => {
-    switch (view.direction) {
+  add = (mat: MatrixAtom, row: number, col: number) => {
+    switch (this.view.direction) {
       case "top":
         Builder.addRow(mat, row);
         return [row, col];
@@ -104,20 +104,20 @@ export module MatBuilder {
   };
 }
 
-export module MatDestructor {
-  export const view = new MatDestructerView();
+export class MatDestructor {
+  view = new MatDestructerView();
 
-  export const reset = () => {
-    view.select("left");
-    view.close();
+  reset = () => {
+    this.view.select("left");
+    this.view.close();
   };
 
-  export const set = (left: number, top: number) => {
-    view.open(left, top);
+  set = (left: number, top: number) => {
+    this.view.open(left, top);
   };
 
-  export const remove = (mat: MatrixAtom, row: number, col: number) => {
-    switch (view.direction) {
+  remove = (mat: MatrixAtom, row: number, col: number) => {
+    switch (this.view.direction) {
       case "top":
         Builder.deleteCol(mat, col);
         return [

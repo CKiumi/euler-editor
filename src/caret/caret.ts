@@ -18,8 +18,7 @@ import {
   MatrixAtom,
   SupSubAtom,
 } from "euler-tex/src/lib";
-import { Engine } from "../engine";
-import { record, setRecord } from "../record";
+import { Record } from "../record";
 import { Util } from "../util";
 import { Pointer } from "./nav";
 
@@ -27,13 +26,15 @@ export type Sel = [anchor: number, offset: number];
 type Action = { focus: () => void; blur: () => void; setLabel: () => void };
 export class Caret {
   sel: [anchor: Atom, offset: Atom] | null = null;
-  public selElem: HTMLElement[] = [];
-  public target: Group & Atom = new MathGroup([]);
-  public pos = 0;
+  selElem: HTMLElement[] = [];
+  target: Group & Atom = new MathGroup([]);
+  pos = 0;
+  record = new Record();
   constructor(
     public elem: HTMLElement,
     public field: HTMLElement,
-    public action: Action
+    public action: Action,
+    public onSelChange: (sel: Sel | null) => void
   ) {}
   x = () => Util.right(this.cur());
   y = () => Util.top(this.cur());
@@ -78,7 +79,7 @@ export class Caret {
     if (sel === null || (sel && sel[0] == sel[1])) {
       this.sel = null;
       cache.forEach((elem) => elem.remove());
-      Engine.reset();
+      this.onSelChange(null);
       return;
     }
     this.sel = sel;
@@ -106,20 +107,18 @@ export class Caret {
     });
     this.selElem.forEach((elem) => this.field.prepend(elem));
     cache.forEach((elem) => elem.remove());
-    if (!this.isTextMode()) {
-      const top = Util.top(this.target);
-      Engine.set(this.getValue(), [
-        Util.right(start),
-        top + rects[0].height,
-        top,
-      ]);
-    }
+    this.onSelChange(this.range());
   };
 
   insert = (atoms: Atom[]) => {
     if (this.sel !== null) return this.replace(atoms, this.range());
     Util.insert(this.target, this.pos, atoms);
-    setRecord({ action: "insert", manager: this.target, pos: this.pos, atoms });
+    this.record.setRecord({
+      action: "insert",
+      manager: this.target,
+      pos: this.pos,
+      atoms,
+    });
     this.action.setLabel();
     this.set(this.target, this.pos + atoms.length);
   };
@@ -311,7 +310,7 @@ export class Caret {
   replace = (newAtoms: Atom[] | null, range: [number, number]) => {
     const [start, num] = [range[0] + 1, Math.abs(range[1] - range[0])];
     const atoms = Util.del(this.target, start, num);
-    setRecord({
+    this.record.setRecord({
       action: "delete",
       manager: this.target,
       pos: start,
@@ -320,7 +319,7 @@ export class Caret {
     });
     if (newAtoms) {
       Util.insert(this.target, range[0], newAtoms);
-      setRecord({
+      this.record.setRecord({
         action: "insert",
         manager: this.target,
         pos: range[0],
@@ -356,7 +355,12 @@ export class Caret {
       return;
     }
     const atoms = Util.del(this.target, this.pos, 1);
-    setRecord({ action: "delete", manager: this.target, pos: this.pos, atoms });
+    this.record.setRecord({
+      action: "delete",
+      manager: this.target,
+      pos: this.pos,
+      atoms,
+    });
     this.action.setLabel();
     this.set(this.target, this.pos - 1);
   }
@@ -484,8 +488,9 @@ export class Caret {
   }
 
   redo = (once?: boolean) => {
-    if (record.index === record.data.length - 1) return;
-    const { action, manager, pos, atoms } = record.data[record.index + 1];
+    if (this.record.record.index === this.record.record.data.length - 1) return;
+    const { action, manager, pos, atoms } =
+      this.record.record.data[this.record.record.index + 1];
     if (action === "insert") {
       Util.insert(manager, pos, atoms);
       this.action.setLabel();
@@ -497,14 +502,15 @@ export class Caret {
       this.action.setLabel();
       this.set(manager, pos - 1);
     }
-    record.index += 1;
+    this.record.record.index += 1;
     if (once) return;
-    if (record.data[record.index].skip) this.redo(true);
+    if (this.record.record.data[this.record.record.index].skip) this.redo(true);
   };
 
   undo = (once?: boolean) => {
-    if (record.index === -1) return;
-    const { action, manager, pos, atoms } = record.data[record.index];
+    if (this.record.record.index === -1) return;
+    const { action, manager, pos, atoms } =
+      this.record.record.data[this.record.record.index];
     this.setSel(null);
     if (action === "insert") {
       Util.del(manager, pos + 1, atoms.length);
@@ -524,8 +530,9 @@ export class Caret {
         this.set(manager, pos);
       }
     }
-    record.index -= 1;
+    this.record.record.index -= 1;
     if (once) return;
-    if (record.data[record.index + 1].skip) this.undo(true);
+    if (this.record.record.data[this.record.record.index + 1].skip)
+      this.undo(true);
   };
 }

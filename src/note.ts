@@ -37,6 +37,10 @@ export class EulerEditor extends HTMLElement {
   engineRunning = false;
   compositions: Atom[] = [];
   fontMode: keyof typeof FontMap | null = null;
+  suggest: Suggestion;
+  engine: Engine;
+  matBuilder: MatBuilder;
+  matDestructor: MatDestructor;
   constructor() {
     super();
     this.append(document.createElement("template").content.cloneNode(true));
@@ -53,17 +57,7 @@ export class EulerEditor extends HTMLElement {
           : new SymAtom("ord", ref, ref, ["Main-R"], { ref: true }),
       ]);
     });
-
-    this.field.append(
-      this.textarea,
-      KeyBoard.elem,
-      Suggestion.view.elem,
-      MatBuilder.view.elem,
-      MatDestructor.view.elem,
-      Engine.view.elem,
-      ref.elem
-    );
-    Suggestion.init((font, replace) => {
+    this.suggest = new Suggestion((font, replace) => {
       this.textarea.focus();
       if (replace === "ref") {
         this.textarea.blur();
@@ -82,10 +76,26 @@ export class EulerEditor extends HTMLElement {
           this.caret.isTextMode() ? parse(replace) : prarseMath(replace)
         );
       }
-
       this.caret.set(this.caret.target, this.caret.pos - 1);
       this.caret.moveRight();
     });
+
+    this.engine = new Engine(async (sympyFn) => {
+      this.engineRunning = true;
+      this.caret.insert(prarseMath(await sympyFn));
+      this.engineRunning = false;
+    });
+    this.matBuilder = new MatBuilder();
+    this.matDestructor = new MatDestructor();
+    this.field.append(
+      this.textarea,
+      KeyBoard.elem,
+      this.suggest.view.elem,
+      this.matBuilder.view.elem,
+      this.matDestructor.view.elem,
+      this.engine.view.elem,
+      ref.elem
+    );
 
     this.addEventListener("focusout", () => {
       this.caret.setSel(null);
@@ -96,29 +106,36 @@ export class EulerEditor extends HTMLElement {
 
     this.field.prepend(caret);
 
-    this.caret = new Caret(caret, this.field, {
-      focus: this.focus,
-      blur: this.blur,
-      setLabel: this.setLabel,
-    });
+    this.caret = new Caret(
+      caret,
+      this.field,
+      {
+        focus: this.focus,
+        blur: this.blur,
+        setLabel: this.setLabel,
+      },
+      (sel) => {
+        if (!sel) return this.engine.reset();
+        if (!this.caret.isTextMode()) {
+          const top = Util.top(this.caret.target);
+          this.engine.set(this.caret.getValue(), [
+            Util.right(this.caret.target.body[sel[0]]),
+            top + Util.height(this.caret.target),
+            top,
+          ]);
+        }
+      }
+    );
     this.caret.target = this.root;
-    Engine.init(async (sympyFn) => {
-      this.engineRunning = true;
-      this.caret.insert(prarseMath(await sympyFn));
-      this.engineRunning = false;
-    });
+
     this.addEventListener("focus", () => this.textarea.focus());
     this.textarea.addEventListener("input", (ev) => {
-      console.time("input");
       this.input(ev as InputEvent);
-      console.timeEnd("input");
     });
 
     this.addEventListener("pointerdown", (ev) => {
       ev.preventDefault();
-      console.time("pointerdown");
       this.onPointerDown(ev);
-      console.timeEnd("pointerdown");
       this.textarea.focus();
     });
     let lastTime = 0;
@@ -126,9 +143,7 @@ export class EulerEditor extends HTMLElement {
       if (ev.buttons === 1 && ev.timeStamp) {
         if (ev.timeStamp - lastTime < 20) return;
         lastTime = ev.timeStamp;
-        console.time("all");
         this.caret.extendSel(ev.clientX, ev.clientY);
-        console.timeEnd("all");
       }
     });
     this.textarea.addEventListener("keydown", (ev) => this.onKeyDown(ev));
@@ -225,16 +240,16 @@ export class EulerEditor extends HTMLElement {
   input(ev: InputEvent) {
     if (ev.isComposing) return;
     if (!ev.data) {
-      Suggestion.reset();
+      this.suggest.reset();
       return;
     }
     if (ev.data === "\\") {
       if (this.caret.isSectionMode()) return;
-      Suggestion.textMode = !!this.caret.isTextMode();
-      Suggestion.set();
-      Suggestion.open([
+      this.suggest.textMode = !!this.caret.isTextMode();
+      this.suggest.set();
+      this.suggest.open([
         this.caret.x(),
-        this.caret.y(),
+        this.caret.bottom(),
         this.caret.elem.getBoundingClientRect().top,
       ]);
       return;
@@ -265,7 +280,7 @@ export class EulerEditor extends HTMLElement {
       return;
     }
 
-    Suggestion.reset();
+    this.suggest.reset();
     if (/^[0-9,<>,.]+/.test(ev.data)) {
       this.caret.insert(prarseMath(ev.data, true));
     }
@@ -283,7 +298,7 @@ export class EulerEditor extends HTMLElement {
     if (ev.data === "{") this.caret.addPar("\\{", "\\}");
     if (ev.data === "[") this.caret.addPar("[", "]");
     if (ev.data === "|") this.caret.addPar("|", "|");
-    Suggestion.reset();
+    this.suggest.reset();
   }
 
   setLabel = () => {
@@ -301,22 +316,22 @@ export class EulerEditor extends HTMLElement {
         const atom = new Char("\n", "Main-R");
         this.caret.insert([atom]);
       }
-      if (Engine.view.isOpen()) {
-        Engine.view.select();
+      if (this.engine.view.isOpen()) {
+        this.engine.view.select();
       }
-      if (MatDestructor.view.isOpen()) return;
+      if (this.matDestructor.view.isOpen()) return;
 
-      if (MatBuilder.view.isOpen()) {
+      if (this.matBuilder.view.isOpen()) {
         const mat = this.caret.target.parent as MatrixAtom;
         const [rowNum, colNum] = Builder.getCurRowCol(this.caret.target, mat);
-        const [newR, newC] = MatBuilder.add(mat, rowNum, colNum);
+        const [newR, newC] = this.matBuilder.add(mat, rowNum, colNum);
         Util.render(this.caret.target);
-        MatBuilder.reset();
+        this.matBuilder.reset();
         this.caret.set(mat.rows[newR][newC], 0);
         return;
       }
       if (Util.isMat(this.caret.target)) {
-        MatBuilder.set(this.caret.x(), Util.bottom(this.caret.target));
+        this.matBuilder.set(this.caret.x(), Util.bottom(this.caret.target));
       }
     }
     if (cmd === "selA") {
@@ -328,15 +343,15 @@ export class EulerEditor extends HTMLElement {
     if (cmd === "selR") this.caret.selectRight();
 
     if (cmd === "right") {
-      if (MatBuilder.view.isOpen()) {
-        MatBuilder.view.select("right");
+      if (this.matBuilder.view.isOpen()) {
+        this.matBuilder.view.select("right");
         return;
       }
-      if (MatDestructor.view.isOpen()) {
-        MatDestructor.reset();
+      if (this.matDestructor.view.isOpen()) {
+        this.matDestructor.reset();
         return;
       }
-      if (Suggestion.view.isOpen()) Suggestion.reset();
+      if (this.suggest.view.isOpen()) this.suggest.reset();
       else {
         this.blur();
         this.caret.moveRight();
@@ -346,15 +361,15 @@ export class EulerEditor extends HTMLElement {
     if (cmd === "extL") this.caret.shiftLeft();
     if (cmd === "selL") this.caret.selectLeft();
     if (cmd === "left") {
-      if (MatBuilder.view.isOpen()) {
-        MatBuilder.view.select("left");
+      if (this.matBuilder.view.isOpen()) {
+        this.matBuilder.view.select("left");
         return;
       }
-      if (MatDestructor.view.isOpen()) {
-        MatDestructor.view.select("left");
+      if (this.matDestructor.view.isOpen()) {
+        this.matDestructor.view.select("left");
         return;
       }
-      if (Suggestion.view.isOpen()) Suggestion.reset();
+      if (this.suggest.view.isOpen()) this.suggest.reset();
       else {
         this.blur();
         this.caret.moveLeft();
@@ -373,15 +388,15 @@ export class EulerEditor extends HTMLElement {
       return;
     }
     if (cmd === "down") {
-      if (Engine.view.isOpen()) {
-        Engine.view.down();
+      if (this.engine.view.isOpen()) {
+        this.engine.view.down();
         return;
       }
-      if (MatBuilder.view.isOpen()) {
-        MatBuilder.view.select("bottom");
+      if (this.matBuilder.view.isOpen()) {
+        this.matBuilder.view.select("bottom");
         return;
       }
-      if (MatDestructor.view.isOpen()) MatDestructor.reset();
+      if (this.matDestructor.view.isOpen()) this.matDestructor.reset();
       if (!this.caret.moveDown()) {
         const x = this.caret.x();
         const parent = Util.parentBlock(this.caret.cur());
@@ -403,16 +418,16 @@ export class EulerEditor extends HTMLElement {
       this.caret.setSel([prev, this.caret.cur()]);
     }
     if (cmd === "up") {
-      if (Engine.view.isOpen()) {
-        Engine.view.up();
+      if (this.engine.view.isOpen()) {
+        this.engine.view.up();
         return;
       }
-      if (MatBuilder.view.isOpen()) {
-        MatBuilder.view.select("top");
+      if (this.matBuilder.view.isOpen()) {
+        this.matBuilder.view.select("top");
         return;
       }
-      if (MatDestructor.view.isOpen()) {
-        MatDestructor.view.select("top");
+      if (this.matDestructor.view.isOpen()) {
+        this.matDestructor.view.select("top");
         return;
       }
       if (!this.caret.moveUp()) {
@@ -429,16 +444,16 @@ export class EulerEditor extends HTMLElement {
     cmd === "redo" && this.caret.redo();
 
     if (cmd === "del") {
-      if (MatDestructor.view.isOpen()) {
+      if (this.matDestructor.view.isOpen()) {
         const mat = this.caret.target.parent as MatrixAtom;
         const [rowNum, colNum] = Builder.getCurRowCol(this.caret.target, mat);
-        const [newR, newC] = MatDestructor.remove(mat, rowNum, colNum);
-        MatDestructor.reset();
+        const [newR, newC] = this.matDestructor.remove(mat, rowNum, colNum);
+        this.matDestructor.reset();
         Util.render(this.caret.target);
         this.caret.set(mat.rows[newR][newC], 0);
         return;
       } else if (Util.isMat(this.caret.target) && this.caret.isFirst()) {
-        MatDestructor.set(this.caret.x(), Util.bottom(this.caret.target));
+        this.matDestructor.set(this.caret.x(), Util.bottom(this.caret.target));
       } else {
         this.caret.sel !== null
           ? this.caret.replace(null, this.caret.range())
@@ -448,9 +463,9 @@ export class EulerEditor extends HTMLElement {
   }
   onPointerDown(ev: PointerEvent) {
     if (ev.shiftKey) return this.caret.extendSel(ev.clientX, ev.clientY);
-    Suggestion.reset();
-    MatBuilder.reset();
-    MatDestructor.reset();
+    this.suggest.reset();
+    this.matBuilder.reset();
+    this.matDestructor.reset();
     this.caret.sel = null;
     this.point([ev.clientX, ev.clientY]);
   }

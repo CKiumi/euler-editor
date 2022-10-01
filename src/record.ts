@@ -1,19 +1,21 @@
 import { Atom, Group } from "euler-tex/src/lib";
-export type SetManager = (target: Group & Atom, pos: number) => void;
-export interface Record {
+export interface RecordData {
   action: "insert" | "delete";
   manager: Group & Atom;
   pos: number;
   atoms: Atom[];
   skip?: boolean;
 }
-export const record: { index: number; data: Record[] } = {
-  index: -1,
-  data: [],
-};
 
-export const setRecord = (data: Record) => {
-  record.data.splice(record.index + 1);
-  record.data.push(data);
-  record.index += 1;
-};
+export class Record {
+  record: { index: number; data: RecordData[] } = {
+    index: -1,
+    data: [],
+  };
+
+  setRecord = (data: RecordData) => {
+    this.record.data.splice(this.record.index + 1);
+    this.record.data.push(data);
+    this.record.index += 1;
+  };
+}

@@ -20,7 +20,6 @@ test("matrix builder", () => {
   expect(() => Builder.addRow(mat, 3)).toThrow();
   expect(() => Builder.deleteRow(mat, 2)).toThrow();
   Builder.addRow(mat, 2);
-  console.log(mat.labels[0]);
   expect(mat).toEqual(
     new MatrixAtom([
       [group, group],

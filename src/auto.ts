@@ -10,7 +10,7 @@ export class Auto {
     public noWait = false
   ) {
     this.textarea = e.textarea;
-    const input = document.querySelector(".suggestion")?.querySelector("input");
+    const input = e.querySelector(".suggestion")?.querySelector("input");
     if (!input) throw new Error("input not found");
     this.input = input;
   }
@@ -138,6 +138,7 @@ export class Auto {
         key: "ArrowLeft",
         shiftKey: true,
         metaKey: true,
+        ctrlKey: true,
       })
     );
   };
