@@ -291,7 +291,6 @@ export class EulerEditor extends HTMLElement {
   };
 
   onKeyDown(ev: KeyboardEvent) {
-    console.log(ev.key, ev.metaKey, ev.shiftKey);
     const cmd = KeyBoard.getCmd(ev);
     this.getAttribute("show-key") && KeyBoard.print(cmd, ev);
     this.textarea.style.transform = this.caret.elem.style.transform;

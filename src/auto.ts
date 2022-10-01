@@ -4,13 +4,18 @@ export class Auto {
   textarea: HTMLTextAreaElement;
   input: HTMLInputElement;
   clipboard = "";
-  constructor(public e: EulerEditor, public speed: number) {
+  constructor(
+    public e: EulerEditor,
+    public speed: number,
+    public noWait = false
+  ) {
     this.textarea = e.textarea;
     const input = document.querySelector(".suggestion")?.querySelector("input");
     if (!input) throw new Error("input not found");
     this.input = input;
   }
-  wait = (time: number) => new Promise((r) => setTimeout(r, time / this.speed));
+  wait = (time: number) =>
+    !this.noWait && new Promise((r) => setTimeout(r, time / this.speed));
 
   waitEngine = async () => {
     if (this.e.engineRunning === true) {
@@ -40,12 +45,12 @@ export class Auto {
     while (this.e.caret.cur() !== this.e.root.body[0]) {
       await this.keydown("ArrowLeft");
       count++;
-      if (count > 1000) throw new Error("Unable to reach to start");
+      if (count > 100000) throw new Error("Unable to reach to start");
     }
     this.speed /= 10;
   };
 
-  leftToEnd = async () => {
+  rightToEnd = async () => {
     let count = 0;
     this.speed *= 10;
     while (
@@ -53,7 +58,7 @@ export class Auto {
     ) {
       await this.keydown("ArrowRight");
       count++;
-      if (count > 1000) throw new Error("Unable to reach to end");
+      if (count > 100000) throw new Error("Unable to reach to end");
     }
     this.speed /= 10;
   };

@@ -4,12 +4,14 @@ import { defineConfig, UserConfigExport } from "vite";
 import { configDefaults } from "vitest/config";
 
 export default defineConfig({
+  root: "page",
   //This is necessary to import euler-engine for vitest
   resolve: {
     mainFields: ["fesm2020", "fesm2015", "module"],
   },
   test: {
     environment: "happy-dom",
+    include: ["../test/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     exclude: [...configDefaults.exclude, "test/e2e/*"],
     coverage: { reportsDirectory: "test/coverage" },
   },
