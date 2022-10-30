@@ -10,7 +10,12 @@ let pyodideReadyPromise = loadPyodideAndPackages();
 
 self.onmessage = async (event) => {
   await pyodideReadyPromise;
-  const { id, script } = event.data;
+  const { id, script, test } = event.data;
+  if (test) {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    self.postMessage({ id, result: "s" });
+    return;
+  }
   try {
     let results = await self.pyodide.runPythonAsync(script);
     self.postMessage({ results, id });

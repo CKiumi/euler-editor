@@ -33,7 +33,6 @@ export class MatBuilderView {
   }
 
   select(direction: "left" | "right" | "top" | "bottom") {
-    console.log(direction);
     this[this.direction].className = "";
     this.direction = direction;
     this[direction].className = "focus";

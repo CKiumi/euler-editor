@@ -5,6 +5,9 @@ test("test", async ({ page }) => {
   page.on("pageerror", (exc) => {
     throw exc;
   });
+  page.on("console", (exc) => {
+    console.log(exc);
+  });
   await page.goto("http://localhost:5173/insert");
   // const originElement = await page.waitForSelector(".EE_container");
   // await originElement.hover();

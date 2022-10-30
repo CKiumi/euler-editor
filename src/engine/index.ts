@@ -1,7 +1,6 @@
 import { latex_to_sympy } from "euler-engine";
 import { SuggestView } from "../suggest/view";
 import { Pyodide } from "./pyodide";
-
 export class Engine {
   view = new SuggestView();
   funcs: [string, (x: string) => Promise<string>][] = [
@@ -13,6 +12,7 @@ export class Engine {
     ["solve", Pyodide.solve],
     ["simplify", Pyodide.simplify],
     ["factor", Pyodide.factor],
+    ["mock", Pyodide.mock],
   ];
   constructor(public onSelected: (x: Promise<string>) => void) {}
 
