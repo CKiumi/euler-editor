@@ -48,7 +48,7 @@ Let $\mathcal{H}$ be a Hilbert space defined by \ref{eq}
       The shift operator $S$ is also an operator on $\mathcal{H}$, which shifts $\Psi_1(x)$ and $\Psi_n(x)$ to $\Psi_1(x-1)$ and $\Psi_n(x+1)$, respectively and does not move $\Psi_k(x)$ for $2\leq k \leq n-1$.
 
 \[
-(S\Psi )(x)=\left[\begin{array}
+(S\Psi )(x)=\left[\begin{array}{}
 \Psi _{1} (x+1)\\
 \Psi _{2} (x)\\
 \vdots \\
@@ -146,7 +146,7 @@ The method to solve the eigenvalue problem of space-inhomogeneous two-state QWs 
       \end{align*}
        for $\lambda\in[0,2\pi)$ satisfying $A_x(\lambda)\neq0$ for all $x\in\mathbb{Z}$. We define bijective map $\iota:V_{\lambda}\rightarrow W_{\lambda}$ by
       \[
-      (\iota \Psi)(x)=\left[\begin{array}
+      (\iota \Psi)(x)=\left[\begin{array}{}
       \Psi_{1}(x-1) \\
       \Psi_{n}(x)
       \end{array}\right].
@@ -224,7 +224,7 @@ export const sec3 = String.raw`
 \label{sec:3} In this section, we focus on the following generalized Grover matrices as the coin matrix, which is the coin matrix studied in \cite{Machida2015-oa} with an additional phase $\Delta_x$.
 \begin{align}
 \label{eq:grover}
-C_{x} =e^{i\Delta _{x}}\left[\begin{array}
+C_{x} =e^{i\Delta _{x}}\left[\begin{array}{}
 -\frac{1+c_{x}}{2} & \frac{s_{x}}{\sqrt{2}} & \frac{1-c_{x}}{2}\\
 \frac{s_{x}}{\sqrt{2}} & c_{x} & \frac{s_{x}}{\sqrt{2}}\\
 \frac{1-c_{x}}{2} & \frac{s_{x}}{\sqrt{2}} & -\frac{1+c_{x}}{2}
@@ -258,10 +258,10 @@ Considering the case $A_{\infty}( \lambda ) =0$, i.e., $ e^{i\lambda } =e^{i\Del
 \label{eq1:lemma}
 &\Psi_{1}(x-1) =\Psi_{3}(x),\ \Psi_{1}(x) =\Psi_{3}(x+1)\ (\text{if } \Delta_x=\Delta_\infty),\\
 \label{eq2:lemma}
-&\left[\begin{array}
+&\left[\begin{array}{}
 \Psi_{1}(x) \\
 \Psi_{3}(x+1)
-\end{array}\right] =T_x(\lambda)\left[\begin{array}
+\end{array}\right] =T_x(\lambda)\left[\begin{array}{}
 \Psi_{1}(x-1) \\
 \Psi_{3}(x)
 \end{array}\right]\ (\text{if } \Delta_x\neq\Delta_\infty).

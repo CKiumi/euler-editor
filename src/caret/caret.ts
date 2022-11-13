@@ -424,12 +424,14 @@ export class Caret {
     if (parentMat) {
       parentMat.setGrid(false);
       Util.render(parentMat);
+      this.action.setLabel();
     }
     [this.target, this.pos] = [atom, pos];
     const parent = Util.parentMatrix(this.target);
     if (parent) {
       parent.setGrid(true);
       Util.render(parent);
+      this.action.setLabel();
     }
     this.renderCaret();
   };

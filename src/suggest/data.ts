@@ -12,9 +12,25 @@ import {
   MISC,
   OP,
   REL,
+  THM_ENV,
 } from "euler-tex/src/parser/command";
 
 const BLOCK: [string, string, string][] = [
+  [
+    "\\pauliX",
+    "\\begin{pmatrix}0&1\\\\1&0\\end{pmatrix}",
+    "\\begin{pmatrix}0&1\\\\1&0\\end{pmatrix}",
+  ],
+  [
+    "\\pauliX",
+    "\\begin{pmatrix}0&1\\\\1&0\\end{pmatrix}",
+    "\\begin{pmatrix}0&1\\\\1&0\\end{pmatrix}",
+  ],
+  [
+    "\\pauliZ",
+    "\\begin{pmatrix}1&0\\\\0&-1\\end{pmatrix}",
+    "\\begin{pmatrix}1&0\\\\0&-1\\end{pmatrix}",
+  ],
   ["\\sum", "\\sum^n_{i=1}", "\\sum^n_{i=1}"],
   ["\\int", "\\int^x_y", "\\int^x_y"],
   ...["pmatrix", "bmatrix", "vmatrix", "Vmatrix", "Bmatrix"].map((name) => {
@@ -92,11 +108,11 @@ export const candidates2: [string, string, string][] = [
     "\\begin{align*}x&=y\\\\&=z\\end{align*}",
     "\\begin{align*}x&=y\\\\&=z\\end{align*}",
   ],
-  [
-    "theorem",
-    "\\begin{theorem}\\end{theorem}",
-    "\\begin{theorem}\\end{theorem}",
-  ],
+  ...(Object.keys(THM_ENV).map((env) => [
+    env,
+    `\\begin{${env}}\\end{${env}}`,
+    `\\begin{${env}}\\end{${env}}`,
+  ]) as [string, string, string][]),
   ["proof", "\\begin{proof}x=y\\end{proof}", "\\begin{proof}x=y\\end{proof}"],
   ["\\ref", "(1)", "ref"],
 ];

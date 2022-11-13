@@ -172,7 +172,7 @@ export class EulerEditor extends HTMLElement {
       pos -= length;
       const atoms = Array.from(ev.data).map((c) => {
         return this.caret.isTextMode()
-          ? new Char(c === " " ? "\u00A0" : c, null)
+          ? new Char(c === " " ? "\u00a0" : c, null)
           : new SymAtom("ord", c, c, ["Main-R"]);
       });
       Util.insert(this.caret.target, pos, atoms);
@@ -193,7 +193,7 @@ export class EulerEditor extends HTMLElement {
       this.caret.insert(
         Array.from(ev.data).map((c) => {
           return this.caret.isTextMode()
-            ? new Char(c === " " ? "\u00A0" : c, null)
+            ? new Char(c === " " ? "\u00a0" : c, null)
             : new SymAtom("ord", c, c, ["Main-R"]);
         })
       );
@@ -262,7 +262,7 @@ export class EulerEditor extends HTMLElement {
         this.focus();
         return;
       }
-      const atom = new Char(ev.data === " " ? "\u00A0" : ev.data, null);
+      const atom = new Char(ev.data === " " ? "\u00a0" : ev.data, null);
       this.caret.insert([atom]);
       return;
     }
@@ -452,7 +452,11 @@ export class EulerEditor extends HTMLElement {
         Util.render(this.caret.target);
         this.caret.set(mat.rows[newR][newC], 0);
         return;
-      } else if (Util.isMat(this.caret.target) && this.caret.isFirst()) {
+      } else if (
+        Util.isMat(this.caret.target) &&
+        this.caret.isFirst() &&
+        this.caret.sel === null
+      ) {
         this.matDestructor.set(this.caret.x(), Util.bottom(this.caret.target));
       } else {
         this.caret.sel !== null

@@ -27,13 +27,13 @@ const route: { [key: string]: () => void } = {
     const eulerNote = document.createElement("euler-editor") as EulerEditor;
     main?.append(eulerNote);
     eulerNote.set(String.raw`
-    \[\begin{pmatrix}a & s & asa & d\\
-v & as & d & f\\
-df & d & a & g\\
-f & g & ax & b\end{pmatrix}
-\]`);
+    \[\begin{pmatrix}a & s & asa & d\\v & as & d & f\\df & d & a & g\\f & g & ax & b\end{pmatrix}\]`);
   },
-
+  "/article": () => {
+    const eulerNote = document.createElement("euler-editor") as EulerEditor;
+    main?.append(eulerNote);
+    eulerNote.set(article);
+  },
   "/insert": async () => {
     run("Text", async (e) => {
       const auto = new Auto(e, 5);
