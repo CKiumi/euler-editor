@@ -12,6 +12,7 @@ export class Engine {
     ["solve", Pyodide.solve],
     ["simplify", Pyodide.simplify],
     ["factor", Pyodide.factor],
+    ["qapply", Pyodide.qapply],
     ["mock", Pyodide.mock],
   ];
   constructor(public onSelected: (x: Promise<string>) => void) {}

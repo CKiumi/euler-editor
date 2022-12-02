@@ -82,7 +82,9 @@ export class EulerEditor extends HTMLElement {
 
     this.engine = new Engine(async (sympyFn) => {
       this.engineRunning = true;
-      this.caret.insert(prarseMath(await sympyFn));
+      this.caret.insert(
+        prarseMath((await sympyFn).replaceAll("\\rangle", ">"))
+      );
       this.engineRunning = false;
     });
     this.matBuilder = new MatBuilder();

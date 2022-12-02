@@ -760,9 +760,9 @@ esutils@^2.0.2:
   resolved "https://registry.npmjs.org/esutils/-/esutils-2.0.3.tgz"
   integrity sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==
 
-euler-engine@./pkg/euler-engine-v0.0.12.tgz:
-  version "0.0.12"
-  resolved "./pkg/euler-engine-v0.0.12.tgz#530dacad7657b13ca6b4f7d0a6df723d3bebcfc2"
+euler-engine@./pkg/euler-engine-v0.0.15.tgz:
+  version "0.0.15"
+  resolved "./pkg/euler-engine-v0.0.15.tgz#5c320af167966dffd3d1c9f6ed8e0fa2dcb27122"
 
 euler-tex@./pkg/euler-tex-v0.6.18.tgz:
   version "0.6.18"

@@ -97,6 +97,16 @@ export module Pyodide {
     return await asyncRun(script);
   };
 
+  export const qapply: EngineFunc = async (latex) => {
+    const script = `
+      from sympy import * 
+      from sympy.physics.quantum.qubit import Qubit, measure_all
+      from sympy.physics.quantum.gate import *
+      from sympy.physics.quantum.qapply import qapply
+      latex(simplify(qapply(${latex})), mat_delim="(")`;
+    return await asyncRun(script);
+  };
+
   export const mock: EngineFunc = async () => {
     const { result } = await new Promise<{ result: string }>((resolve) => {
       callbacks[++id] = resolve;

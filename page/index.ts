@@ -26,8 +26,9 @@ const route: { [key: string]: () => void } = {
   "/": () => {
     const eulerNote = document.createElement("euler-editor") as EulerEditor;
     main?.append(eulerNote);
-    eulerNote.set(String.raw`
-    \[\begin{pmatrix}a & s & asa & d\\v & as & d & f\\df & d & a & g\\f & g & ax & b\end{pmatrix}\]`);
+    eulerNote.set(
+      String.raw`\[X\left|0\right>,H\left|0\right>, H_{0}H_{1}\left|00\right>,  Y_{1}\left|00\right>\]`
+    );
   },
   "/article": () => {
     const eulerNote = document.createElement("euler-editor") as EulerEditor;

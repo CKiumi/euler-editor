@@ -31,6 +31,11 @@ const BLOCK: [string, string, string][] = [
     "\\begin{pmatrix}1&0\\\\0&-1\\end{pmatrix}",
     "\\begin{pmatrix}1&0\\\\0&-1\\end{pmatrix}",
   ],
+  [
+    "\\hadamard",
+    "\\frac{1}{\\sqrt{2}}\\begin{pmatrix}1&1\\\\1&-1\\end{pmatrix}",
+    "\\frac{1}{\\sqrt{2}}\\begin{pmatrix}1&1\\\\1&-1\\end{pmatrix}",
+  ],
   ["\\sum", "\\sum^n_{i=1}", "\\sum^n_{i=1}"],
   ["\\int", "\\int^x_y", "\\int^x_y"],
   ...["pmatrix", "bmatrix", "vmatrix", "Vmatrix", "Bmatrix"].map((name) => {
