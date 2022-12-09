@@ -55,6 +55,8 @@ const BLOCK: [string, string, string][] = [
     "\\begin{cases}a&=b+c\\\\d&=e+f\\end{cases}",
     "\\begin{cases}&=\\\\&=\\end{cases}",
   ],
+  ["\\CNOT", "\\operatorname{CNOT}", "\\operatorname{CNOT}"],
+  ["\\CZ", "\\operatorname{CZ}", "\\operatorname{CZ}"],
   ["\\frac", "\\frac{a}{b}", "\\frac{}{}"],
   ["\\sqrt", "\\sqrt{a}", "\\sqrt{}"],
   ["\\overline", "\\overline{a}", "\\overline{}"],

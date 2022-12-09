@@ -760,13 +760,13 @@ esutils@^2.0.2:
   resolved "https://registry.npmjs.org/esutils/-/esutils-2.0.3.tgz"
   integrity sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==
 
-euler-engine@./pkg/euler-engine-v0.0.15.tgz:
-  version "0.0.15"
-  resolved "./pkg/euler-engine-v0.0.15.tgz#5c320af167966dffd3d1c9f6ed8e0fa2dcb27122"
+euler-engine@./pkg/euler-engine-v0.0.17.tgz:
+  version "0.0.17"
+  resolved "./pkg/euler-engine-v0.0.17.tgz#965bc6973e200216cac4fefc548fd151a12701c4"
 
-euler-tex@./pkg/euler-tex-v0.6.18.tgz:
-  version "0.6.18"
-  resolved "./pkg/euler-tex-v0.6.18.tgz#9cbfc70b7e73666f6649526aef36227e145e3248"
+euler-tex@./pkg/euler-tex-v0.6.21.tgz:
+  version "0.6.21"
+  resolved "./pkg/euler-tex-v0.6.21.tgz#ac0116ccb767d2010264f48bedea1edd8434f3f2"
 
 fast-deep-equal@^3.1.1, fast-deep-equal@^3.1.3:
   version "3.1.3"
