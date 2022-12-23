@@ -103,7 +103,7 @@ export module Pyodide {
       from sympy.physics.quantum.qubit import Qubit, measure_all
       from sympy.physics.quantum.gate import *
       from sympy.physics.quantum.qapply import qapply
-      latex(simplify(qapply(${latex})), mat_delim="(")`;
+      latex(factor(qapply(${latex})), mat_delim="(")`;
     return await asyncRun(script);
   };
 
