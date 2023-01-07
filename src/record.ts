@@ -13,6 +13,10 @@ export class Record {
     data: [],
   };
 
+  cur = () => this.record.data[this.record.index];
+  peek = () => this.record.data[this.record.index + 1];
+  isEmpty = () => this.record.index === -1;
+  isLast = () => this.record.index === this.record.data.length - 1;
   setRecord = (data: RecordData) => {
     this.record.data.splice(this.record.index + 1);
     this.record.data.push(data);

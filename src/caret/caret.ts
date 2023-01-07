@@ -490,38 +490,33 @@ export class Caret {
   }
 
   redo = (once?: boolean) => {
-    if (this.record.record.index === this.record.record.data.length - 1) return;
-    const { action, manager, pos, atoms } =
-      this.record.record.data[this.record.record.index + 1];
+    if (this.record.isLast()) return;
+    const { action, manager, pos, atoms, skip } = this.record.peek();
     if (action === "insert") {
       Util.insert(manager, pos, atoms);
-      this.action.setLabel();
       this.set(manager, pos + atoms.length);
     }
     if (action === "delete") {
       this.setSel(null);
       Util.del(manager, pos, atoms.length);
-      this.action.setLabel();
       this.set(manager, pos - 1);
     }
+    this.action.setLabel();
     this.record.record.index += 1;
     if (once) return;
-    if (this.record.record.data[this.record.record.index].skip) this.redo(true);
+    if (skip) this.redo(true);
   };
 
   undo = (once?: boolean) => {
-    if (this.record.record.index === -1) return;
-    const { action, manager, pos, atoms } =
-      this.record.record.data[this.record.record.index];
+    if (this.record.isEmpty()) return;
+    const { action, manager, pos, atoms, skip } = this.record.cur();
     this.setSel(null);
     if (action === "insert") {
       Util.del(manager, pos + 1, atoms.length);
-      this.action.setLabel();
       this.set(manager, pos);
     }
     if (action === "delete") {
       Util.insert(manager, pos - 1, atoms);
-      this.action.setLabel();
       if (atoms.length > 1) {
         this.setSel([
           manager.body[pos - 1],
@@ -532,9 +527,9 @@ export class Caret {
         this.set(manager, pos);
       }
     }
+    this.action.setLabel();
     this.record.record.index -= 1;
     if (once) return;
-    if (this.record.record.data[this.record.record.index + 1].skip)
-      this.undo(true);
+    if (skip) this.undo(true);
   };
 }
