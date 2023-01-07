@@ -52,7 +52,7 @@ export class SuggestView {
   }
 
   select = () => {
-    this.at().dispatchEvent(new Event("click", {}));
+    this.at().dispatchEvent(new Event("pointerdown", {}));
     this.pos = 0;
     this.close();
   };
@@ -83,7 +83,7 @@ export class SuggestView {
       wrapper.classList.add("hbox", "preview");
       wrapper.append(preview);
       div.append(text, wrapper);
-      div.onclick = () => {
+      div.onpointerdown = () => {
         onClick();
         this.close();
       };

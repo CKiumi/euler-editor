@@ -19,7 +19,7 @@ import {
   Theorem,
 } from "euler-tex/src/lib";
 import { FontMap } from "euler-tex/src/parser/command";
-import { Caret } from "./caret/caret";
+import { Caret, Sel } from "./caret/caret";
 import { Engine } from "./engine";
 import { KeyBoard } from "./keyboard";
 import { MatBuilder, MatDestructor } from "./mat/mat";
@@ -100,7 +100,8 @@ export class EulerEditor extends HTMLElement {
     );
 
     this.addEventListener("focusout", () => {
-      this.caret.setSel(null);
+      if (!this.engineRunning && !this.suggest.view.isOpen())
+        this.caret.setSel(null);
     });
 
     const caret = document.createElement("div");
@@ -116,17 +117,7 @@ export class EulerEditor extends HTMLElement {
         blur: this.blur,
         setLabel: this.setLabel,
       },
-      (sel) => {
-        if (!sel) return this.engine.reset();
-        if (!this.caret.isTextMode()) {
-          const top = Util.top(this.caret.target);
-          this.engine.set(this.caret.getValue(), [
-            Util.right(this.caret.target.body[sel[0]]),
-            top + Util.height(this.caret.target),
-            top,
-          ]);
-        }
-      }
+      this.onSelChange
     );
     this.caret.target = this.root;
 
@@ -247,6 +238,7 @@ export class EulerEditor extends HTMLElement {
     }
     if (ev.data === "\\") {
       if (this.caret.isSectionMode()) return;
+      this.engine.reset();
       this.suggest.textMode = !!this.caret.isTextMode();
       this.suggest.set();
       this.suggest.open([
@@ -305,6 +297,18 @@ export class EulerEditor extends HTMLElement {
 
   setLabel = () => {
     setLabels(this.root.elem);
+  };
+
+  onSelChange = (sel: Sel | null) => {
+    if (!sel) return this.engine.reset();
+    if (!this.caret.isTextMode()) {
+      const top = Util.top(this.caret.target);
+      this.engine.set(this.caret.getValue(), [
+        Util.right(this.caret.target.body[sel[0]]),
+        top + Util.height(this.caret.target),
+        top,
+      ]);
+    }
   };
 
   onKeyDown(ev: KeyboardEvent) {
