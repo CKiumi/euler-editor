@@ -4,6 +4,7 @@ import { Pyodide } from "./pyodide";
 export class Engine {
   view = new SuggestView();
   funcs: [string, (x: string) => Promise<string>][] = [
+    ["numeric", Pyodide.numeric],
     ["collect", Pyodide.collect],
     ["expand", Pyodide.expand],
     ["trig expand", Pyodide.trigExpand],
@@ -13,6 +14,7 @@ export class Engine {
     ["simplify", Pyodide.simplify],
     ["factor", Pyodide.factor],
     ["qapply", Pyodide.qapply],
+    ["dagger", Pyodide.dagger],
     ["mock", Pyodide.mock],
   ];
   constructor(public onSelected: (x: Promise<string>) => void) {}

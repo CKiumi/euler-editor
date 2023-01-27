@@ -27,7 +27,7 @@ const route: { [key: string]: () => void } = {
     const eulerNote = document.createElement("euler-editor") as EulerEditor;
     main?.append(eulerNote);
     eulerNote.set(
-      String.raw`\[X\left|0\right>,H\left|0\right>, H_{0}H_{1}\left|00\right>,  Y_{1}\left|00\right>,\operatorname{CNOT}_{1,2}\left|111\right>\]`
+      String.raw`\[X\left|0\right>,H\left|0\right>, H_{0}H_{1}\left|00\right>,  Y_{1}\left|00\right>,\operatorname{CNOT}_{1,2}\left|111\right>,\left<00\right|H_{0}H_{1}\left(4Y_{1}+2X_{0}\right)H_{0}H_{1}\left|00\right>\]`
     );
   },
   "/article": () => {

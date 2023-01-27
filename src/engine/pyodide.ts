@@ -35,6 +35,14 @@ const asyncRun = async (script: string) => {
   }
 };
 export module Pyodide {
+  export const numeric: EngineFunc = async (latex) => {
+    const script = `
+      from sympy import * 
+      from sympy.physics.quantum import *
+      latex(N(${latex}), mat_delim="(")`;
+    return await asyncRun(script);
+  };
+
   export const collect: EngineFunc = async (latex) => {
     const script = `
       from sympy import * 
@@ -104,6 +112,16 @@ export module Pyodide {
       from sympy.physics.quantum.gate import *
       from sympy.physics.quantum.qapply import qapply
       latex(factor(qapply(${latex})), mat_delim="(")`;
+    return await asyncRun(script);
+  };
+
+  export const dagger: EngineFunc = async (latex) => {
+    const script = `
+      from sympy import * 
+      from sympy.physics.quantum.qubit import Qubit
+      from sympy.physics.quantum.dagger import Dagger
+      from sympy.physics.quantum.gate import *
+      latex(Dagger(${latex}), mat_delim="(")`;
     return await asyncRun(script);
   };
 
